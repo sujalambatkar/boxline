@@ -1,4 +1,5 @@
 using BoxLine.Core.Interfaces;
+using BoxLine.Infrastructure.Documents;
 using BoxLine.Infrastructure.Persistence;
 using BoxLine.Infrastructure.Repositories;
 using BoxLine.Infrastructure.Seeding;
@@ -30,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IVoyageRepository, VoyageRepository>();
         services.AddScoped<IDetentionTariffRepository, DetentionTariffRepository>();
         services.AddScoped<IDetentionSqlCalculator, SqlDetentionCalculator>();
+        services.AddSingleton<IBillOfLadingRenderer, QuestPdfBillOfLadingRenderer>();
+        services.AddSingleton<IBookingSpreadsheetWriter, MiniExcelBookingSpreadsheetWriter>();
         services.AddScoped<DatabaseSeeder>();
 
         QuestPDF.Settings.License = LicenseType.Community;

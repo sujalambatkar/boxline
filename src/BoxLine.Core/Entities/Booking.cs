@@ -42,6 +42,9 @@ public class Booking
 
     public DateTime UpdatedAt { get; set; }
 
+    /// <summary>When the booking was confirmed (UTC); null for drafts and for bookings confirmed before this was recorded.</summary>
+    public DateTime? ConfirmedAt { get; set; }
+
     /// <summary>Optimistic-concurrency token maintained by the database.</summary>
     public byte[] RowVersion { get; set; } = [];
 

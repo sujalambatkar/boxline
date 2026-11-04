@@ -1,6 +1,7 @@
 using BoxLine.Api.Auth;
 using BoxLine.Api.Contracts;
 using BoxLine.Core.Bookings;
+using BoxLine.Core.Documents;
 using BoxLine.Core.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ namespace BoxLine.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/bookings")]
-public sealed class BookingsController(BookingService bookings) : ControllerBase
+public sealed class BookingsController(BookingService bookings, DocumentService documents) : ControllerBase
 {
     /// <summary>Lists bookings, newest first, with server-side filtering and paging.</summary>
     /// <param name="createdFrom">First creation day, inclusive (yyyy-MM-dd).</param>
@@ -36,6 +37,48 @@ public sealed class BookingsController(BookingService bookings) : ControllerBase
 
         return new PagedResponse<BookingResponse>(
             result.Items.Select(BookingResponse.From).ToList(), result.TotalCount, result.Page, result.PageSize);
+    }
+
+    /// <summary>
+    /// Exports every booking that matches the filters (all pages, not just the current one) as CSV or Excel. It takes the
+    /// same filters as the list and, like it, shows shippers only their own bookings. At most 10,000 rows.
+    /// </summary>
+    /// <param name="format">csv (default) or xlsx.</param>
+    [HttpGet("export")]
+    [Produces("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    public async Task<IActionResult> Export(
+        [FromQuery] BookingStatus? status,
+        [FromQuery] int? polId,
+        [FromQuery] int? podId,
+        [FromQuery] int? shipperId,
+        [FromQuery] DateOnly? createdFrom,
+        [FromQuery] DateOnly? createdTo,
+        [FromQuery] string? search,
+        [FromQuery] string format = "csv",
+        CancellationToken ct = default)
+    {
+        if (!Enum.TryParse<ExportFormat>(format, ignoreCase: true, out var exportFormat) || !Enum.IsDefined(exportFormat))
+        {
+            ModelState.AddModelError(nameof(format), "format must be csv or xlsx.");
+            return ValidationProblem(ModelState);
+        }
+
+        var query = new BookingQuery(status, polId, podId, shipperId, createdFrom, createdTo, search);
+        var file = await documents.ExportBookingsAsync(User.ToActor(), query, exportFormat, ct);
+
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
+    /// <summary>
+    /// The bill of lading as a PDF. A confirmed booking gets a clean document and a draft one marked DRAFT; a cancelled
+    /// booking has none (409).
+    /// </summary>
+    [HttpGet("{id:int}/bill-of-lading")]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> BillOfLading(int id, CancellationToken ct)
+    {
+        var file = await documents.GetBillOfLadingAsync(User.ToActor(), id, ct);
+        return File(file.Content, file.ContentType, file.FileName);
     }
 
     [HttpGet("{id:int}")]

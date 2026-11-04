@@ -52,6 +52,7 @@ public sealed record BookingResponse(
     IReadOnlyList<BookingStatus> AllowedTransitions,
     DateTime CreatedAt,
     DateTime UpdatedAt,
+    DateTime? ConfirmedAt,
     string RowVersion,
     int TotalContainers,
     IReadOnlyList<BookingLineResponse> Lines)
@@ -70,6 +71,7 @@ public sealed record BookingResponse(
         BookingWorkflow.NextStatuses(booking.Status),
         DateTime.SpecifyKind(booking.CreatedAt, DateTimeKind.Utc),
         DateTime.SpecifyKind(booking.UpdatedAt, DateTimeKind.Utc),
+        CallResponse.Utc(booking.ConfirmedAt),
         Convert.ToBase64String(booking.RowVersion),
         booking.Lines.Sum(l => l.Quantity),
         booking.Lines

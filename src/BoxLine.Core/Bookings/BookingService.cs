@@ -145,8 +145,14 @@ public sealed class BookingService(
         var booking = await LoadForActorAsync(actor, id, cancellationToken);
         BookingWorkflow.EnsureCanTransition(booking.Status, target);
 
+        var now = clock.GetUtcNow().UtcDateTime;
         booking.Status = target;
-        booking.UpdatedAt = clock.GetUtcNow().UtcDateTime;
+        booking.UpdatedAt = now;
+        if (target == BookingStatus.Confirmed)
+        {
+            booking.ConfirmedAt = now;
+        }
+
         await bookings.UpdateAsync(booking, expectedRowVersion: null, cancellationToken);
 
         return booking;
