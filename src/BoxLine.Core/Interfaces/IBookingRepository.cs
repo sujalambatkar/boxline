@@ -12,6 +12,12 @@ public interface IBookingRepository
     /// <summary>Loads a tracked booking with its relations, or null.</summary>
     Task<Booking?> GetByIdAsync(int id, CancellationToken cancellationToken);
 
+    /// <summary>Loads a booking and its relations by booking number, or null.</summary>
+    Task<Booking?> GetByNumberAsync(string bookingNumber, CancellationToken cancellationToken);
+
+    /// <summary>The owning shipper's id, or null when the booking does not exist. A cheap access check.</summary>
+    Task<int?> GetShipperIdAsync(int bookingId, CancellationToken cancellationToken);
+
     /// <summary>Assigns the next booking number for the booking's month and inserts it, retrying on a number clash.</summary>
     Task AddAsync(Booking booking, CancellationToken cancellationToken);
 

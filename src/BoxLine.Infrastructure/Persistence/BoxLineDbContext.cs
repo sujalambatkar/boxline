@@ -18,6 +18,10 @@ public class BoxLineDbContext(DbContextOptions<BoxLineDbContext> options) : DbCo
 
     public DbSet<BookingLine> BookingLines => Set<BookingLine>();
 
+    public DbSet<ContainerMovement> ContainerMovements => Set<ContainerMovement>();
+
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BoxLineDbContext).Assembly);

@@ -112,6 +112,37 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.ToTable("BookingLines");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SenderUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SenderUserId");
+
+                    b.HasIndex("BookingId", "Id");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Container", b =>
                 {
                     b.Property<int>("Id")
@@ -148,6 +179,56 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Containers");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.ContainerMovement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ContainerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("LocationUnLocode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .IsUnicode(false)
+                        .HasColumnType("char(5)")
+                        .IsFixedLength();
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RecordedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("RecordedByUserId");
+
+                    b.HasIndex("ContainerId", "OccurredAt", "Id");
+
+                    b.ToTable("ContainerMovements");
                 });
 
             modelBuilder.Entity("BoxLine.Core.Entities.ContainerType", b =>
@@ -298,6 +379,23 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.Navigation("ContainerType");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.ChatMessage", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.Booking", null)
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BoxLine.Core.Entities.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Container", b =>
                 {
                     b.HasOne("BoxLine.Core.Entities.ContainerType", "ContainerType")
@@ -307,6 +405,30 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("ContainerType");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.ContainerMovement", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.Booking", "Booking")
+                        .WithMany()
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BoxLine.Core.Entities.Container", "Container")
+                        .WithMany()
+                        .HasForeignKey("ContainerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BoxLine.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecordedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Container");
                 });
 
             modelBuilder.Entity("BoxLine.Core.Entities.Booking", b =>

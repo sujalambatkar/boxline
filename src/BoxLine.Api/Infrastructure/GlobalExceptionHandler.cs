@@ -13,6 +13,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         ProblemDetails problem = exception switch
         {
             NotFoundException e => Problem(StatusCodes.Status404NotFound, "Not found.", e.Message),
+            ForbiddenException e => Problem(StatusCodes.Status403Forbidden, "Forbidden.", e.Message),
             ConflictException e => Problem(StatusCodes.Status409Conflict, "Conflict.", e.Message),
             DomainValidationException e => new ValidationProblemDetails(e.Errors.ToDictionary(x => x.Key, x => x.Value))
             {
@@ -45,6 +46,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Type = status switch
         {
             StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+            StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc9110#section-15.5.4",
             StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
             _ => "https://tools.ietf.org/html/rfc9110#section-15.6.1",
         },

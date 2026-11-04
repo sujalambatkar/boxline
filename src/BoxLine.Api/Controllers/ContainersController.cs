@@ -131,6 +131,16 @@ public sealed class ContainersController(IContainerRepository containers, IConta
             return NotFound();
         }
 
+        if (await containers.HasMovementsAsync(id, ct))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Container has movement history.",
+                Detail = $"Container {container.Number} has recorded movements and cannot be deleted.",
+            });
+        }
+
         await containers.DeleteAsync(container, ct);
         return NoContent();
     }

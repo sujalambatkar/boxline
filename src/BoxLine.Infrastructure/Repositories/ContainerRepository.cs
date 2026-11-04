@@ -43,6 +43,12 @@ public sealed class ContainerRepository(BoxLineDbContext db) : IContainerReposit
     public Task<Container?> GetByIdAsync(int id, CancellationToken cancellationToken) =>
         db.Containers.Include(c => c.ContainerType).FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
+    public Task<Container?> GetByNumberAsync(string number, CancellationToken cancellationToken) =>
+        db.Containers.AsNoTracking().Include(c => c.ContainerType).FirstOrDefaultAsync(c => c.Number == number, cancellationToken);
+
+    public Task<bool> HasMovementsAsync(int id, CancellationToken cancellationToken) =>
+        db.ContainerMovements.AnyAsync(m => m.ContainerId == id, cancellationToken);
+
     public Task<bool> NumberExistsAsync(string number, CancellationToken cancellationToken) =>
         db.Containers.AnyAsync(c => c.Number == number, cancellationToken);
 

@@ -87,6 +87,21 @@ public sealed class BookingRepository(BoxLineDbContext db) : IBookingRepository
             .AsSplitQuery()
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
 
+    public Task<Booking?> GetByNumberAsync(string bookingNumber, CancellationToken cancellationToken) =>
+        db.Bookings
+            .AsNoTracking()
+            .Include(b => b.Shipper)
+            .Include(b => b.Pol)
+            .Include(b => b.Pod)
+            .FirstOrDefaultAsync(b => b.BookingNumber == bookingNumber, cancellationToken);
+
+    public async Task<int?> GetShipperIdAsync(int bookingId, CancellationToken cancellationToken) =>
+        await db.Bookings
+            .AsNoTracking()
+            .Where(b => b.Id == bookingId)
+            .Select(b => (int?)b.ShipperId)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task AddAsync(Booking booking, CancellationToken cancellationToken)
     {
         var prefix = BookingNumber.Prefix(booking.CreatedAt);

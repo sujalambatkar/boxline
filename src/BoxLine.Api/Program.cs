@@ -4,7 +4,10 @@ using System.Text.Json.Serialization;
 using BoxLine.Api.Auth;
 using BoxLine.Api.Configuration;
 using BoxLine.Api.Infrastructure;
+using BoxLine.Api.Hubs;
 using BoxLine.Core.Bookings;
+using BoxLine.Core.Chat;
+using BoxLine.Core.Movements;
 using BoxLine.Core.Entities;
 using BoxLine.Infrastructure;
 using BoxLine.Infrastructure.Seeding;
@@ -29,6 +32,10 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<MovementService>();
+builder.Services.AddScoped<ChatService>();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddScoped<DevelopmentUserSeeder>();
 
 builder.Services.AddControllers()
@@ -49,6 +56,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.MapInboundClaims = false;
+        options.Events = new JwtBearerEvents
+        {
+            // Browsers cannot set an Authorization header on a WebSocket, so SignalR sends the token as a query value.
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments(ChatHub.Path))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            },
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -113,6 +134,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>(ChatHub.Path);
 app.MapHealthChecks("/health");
 
 app.Run();
