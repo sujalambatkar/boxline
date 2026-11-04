@@ -1,0 +1,46 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.toolbar {
+  position: relative;
+  z-index: 2;
+}
+
+.logo {
+  margin-right: 8px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  opacity: 0.85;
+
+  &.online {
+    opacity: 1;
+  }
+}
+
+.container {
+  flex: 1;
+}
+
+.sidenav {
+  width: 220px;
+}
+
+.content {
+  padding: 24px;
+}
+
+.active {
+  background: rgba(63, 81, 181, 0.12);
+}

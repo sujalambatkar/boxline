@@ -1,0 +1,23 @@
+<mat-toolbar color="primary" class="toolbar">
+  <mat-icon class="logo">sailing</mat-icon>
+  <span class="title">BoxLine</span>
+  <span class="spacer"></span>
+  <span *ngIf="{ online: apiOnline$ | async } as api" class="status" [class.online]="api.online" aria-live="polite">
+    <mat-icon inline>{{ api.online ? 'check_circle' : 'error' }}</mat-icon>
+    API {{ api.online ? 'online' : 'offline' }}
+  </span>
+</mat-toolbar>
+
+<mat-sidenav-container class="container">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <mat-nav-list>
+      <a mat-list-item *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="active">
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+  <mat-sidenav-content class="content">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
