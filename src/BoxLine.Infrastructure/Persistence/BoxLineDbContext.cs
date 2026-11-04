@@ -1,3 +1,4 @@
+using BoxLine.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BoxLine.Infrastructure.Persistence;
@@ -5,6 +6,12 @@ namespace BoxLine.Infrastructure.Persistence;
 /// <summary>EF Core context for the BoxLine database.</summary>
 public class BoxLineDbContext(DbContextOptions<BoxLineDbContext> options) : DbContext(options)
 {
+    public DbSet<Port> Ports => Set<Port>();
+
+    public DbSet<ContainerType> ContainerTypes => Set<ContainerType>();
+
+    public DbSet<Container> Containers => Set<Container>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BoxLineDbContext).Assembly);

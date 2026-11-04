@@ -1,7 +1,9 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using BoxLine.Api.Configuration;
 using BoxLine.Api.Infrastructure;
 using BoxLine.Infrastructure;
+using BoxLine.Infrastructure.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.IdentityModel.Tokens;
@@ -18,7 +20,8 @@ if (jwt.Secret.Length < 32)
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -74,6 +77,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
+}
 
 app.UseExceptionHandler();
 app.UseHttpLogging();

@@ -1,4 +1,7 @@
+using BoxLine.Core.Interfaces;
 using BoxLine.Infrastructure.Persistence;
+using BoxLine.Infrastructure.Repositories;
+using BoxLine.Infrastructure.Seeding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,7 +11,7 @@ namespace BoxLine.Infrastructure;
 
 public static class DependencyInjection
 {
-    /// <summary>Registers the database context and document tooling.</summary>
+    /// <summary>Registers the database context, repositories, seeder and document tooling.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection")
@@ -16,6 +19,10 @@ public static class DependencyInjection
                 "ConnectionStrings:DefaultConnection is not configured. Set it with dotnet user-secrets.");
 
         services.AddDbContext<BoxLineDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddScoped<IPortRepository, PortRepository>();
+        services.AddScoped<IContainerTypeRepository, ContainerTypeRepository>();
+        services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddScoped<DatabaseSeeder>();
 
         QuestPDF.Settings.License = LicenseType.Community;
 

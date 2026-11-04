@@ -3,7 +3,8 @@ using FluentAssertions;
 
 namespace BoxLine.Tests.Api;
 
-public class HealthEndpointTests(BoxLineApiFactory factory) : IClassFixture<BoxLineApiFactory>
+[Collection(ApiCollection.Name)]
+public class HealthEndpointTests(BoxLineApiFactory factory)
 {
     [Fact]
     public async Task Health_ReturnsHealthy_WhenDatabaseIsReachable()
