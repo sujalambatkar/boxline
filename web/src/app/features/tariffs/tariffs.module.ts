@@ -1,17 +1,12 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
+import { SharedModule } from '../../shared/shared.module';
+import { TariffDialogComponent } from './tariff-dialog/tariff-dialog.component';
 import { TariffsRoutingModule } from './tariffs-routing.module';
 import { TariffsComponent } from './tariffs.component';
 
-
 @NgModule({
-  declarations: [
-    TariffsComponent
-  ],
-  imports: [
-    CommonModule,
-    TariffsRoutingModule
-  ]
+  declarations: [TariffsComponent, TariffDialogComponent],
+  imports: [SharedModule, TariffsRoutingModule],
 })
-export class TariffsModule { }
+export class TariffsModule {}

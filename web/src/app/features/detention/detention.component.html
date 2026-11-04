@@ -1,0 +1,74 @@
+<h1>Detention &amp; demurrage calculator</h1>
+<p class="intro">
+  Days are calendar days, counting both the out date and the return date. After the free days, each day is charged
+  at the rate of the slab it falls in.
+</p>
+
+<mat-tab-group [selectedIndex]="tabIndex" (selectedIndexChange)="onTabChange($event)" animationDuration="0ms">
+  <mat-tab label="From a container">
+    <form class="form" [formGroup]="containerForm" (ngSubmit)="priceContainer()" novalidate>
+      <p class="hint">Uses the container's recorded movements: gate out full (or delivery) to empty returned.</p>
+
+      <div class="row">
+        <mat-form-field appearance="outline" class="wide">
+          <mat-label>Container number</mat-label>
+          <input matInput formControlName="containerNumber" placeholder="CSQU3054383" autocomplete="off" class="mono" />
+          <mat-error>{{ containerNumberError }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Booking number (optional)</mat-label>
+          <input matInput formControlName="bookingNumber" placeholder="BL-202611-0001" autocomplete="off" class="mono" />
+          <mat-hint>Pick which booking's gate out starts the clock</mat-hint>
+          <mat-error>Format: BL-YYYYMM-0000.</mat-error>
+        </mat-form-field>
+      </div>
+
+      <mat-checkbox formControlName="countWeekends">Count Saturdays and Sundays as chargeable days</mat-checkbox>
+
+      <div class="actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="loading">{{ loading ? 'Calculating…' : 'Calculate' }}</button>
+      </div>
+    </form>
+  </mat-tab>
+
+  <mat-tab label="What-if">
+    <form class="form" [formGroup]="whatIfForm" (ngSubmit)="priceWhatIf()" novalidate>
+      <p class="hint">Price any period for a container type, using the tariff valid on the out date.</p>
+
+      <div class="row">
+        <mat-form-field appearance="outline">
+          <mat-label>Container type</mat-label>
+          <mat-select formControlName="containerTypeId">
+            <mat-option *ngFor="let type of types" [value]="type.id">{{ type.code }} · {{ type.description }}</mat-option>
+          </mat-select>
+          <mat-error>Select a container type.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Out date</mat-label>
+          <input matInput type="date" formControlName="outDate" />
+          <mat-error>Enter the out date.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Return date</mat-label>
+          <input matInput type="date" formControlName="returnDate" [min]="whatIfForm.controls.outDate.value || null" />
+          <mat-error>Enter the return date.</mat-error>
+        </mat-form-field>
+      </div>
+      <p class="field-error" *ngIf="whatIfForm.hasError('returnBeforeOut')" role="alert">The return date cannot be before the out date.</p>
+
+      <mat-checkbox formControlName="countWeekends">Count Saturdays and Sundays as chargeable days</mat-checkbox>
+
+      <div class="actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="loading">{{ loading ? 'Calculating…' : 'Calculate' }}</button>
+      </div>
+    </form>
+  </mat-tab>
+</mat-tab-group>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+<p class="message" *ngIf="message" role="alert">{{ message }}</p>
+
+<app-detention-result *ngIf="result" [result]="result"></app-detention-result>

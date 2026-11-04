@@ -167,6 +167,28 @@ describe('TrackingComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith([], { queryParams: { q: 'CSQU3054383' }, queryParamsHandling: 'merge' });
   });
 
+  it('links a container with history to the detention calculator', async () => {
+    await create('Shipper');
+
+    setQuery('CSQU3054383');
+    http.expectOne(r => r.url.includes('/tracking/containers/')).flush(containerResult());
+    fixture.detectChanges();
+
+    const link = el().querySelector('a.detention-link') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Calculate detention');
+    expect(link.getAttribute('href')).toContain('/detention?container=CSQU3054383');
+  });
+
+  it('does not offer the calculator for a container with no movements', async () => {
+    await create('Ops');
+
+    setQuery('CSQU3054383');
+    http.expectOne(r => r.url.includes('/tracking/containers/')).flush(containerResult({ events: [], current: null, allowedNextEvents: ['GateOutEmpty'] }));
+    fixture.detectChanges();
+
+    expect(el().querySelector('a.detention-link')).toBeNull();
+  });
+
   it('offers Ops the record form for a container that can take another event', async () => {
     await create('Ops');
 

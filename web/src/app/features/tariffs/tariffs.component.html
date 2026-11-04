@@ -1,2 +1,64 @@
-<h1>Tariffs</h1>
-<p>Maintain detention and demurrage tariffs.</p>
+<div class="header">
+  <h1>Detention &amp; demurrage tariffs</h1>
+  <button mat-flat-button color="primary" (click)="add()" [disabled]="types.length === 0">
+    <mat-icon>add</mat-icon>
+    Add tariff
+  </button>
+</div>
+
+<p class="intro">
+  After the free days, each day is charged at the rate of the slab it falls in. Slabs use absolute day numbers: the
+  first starts the day after the free days and the last is open-ended.
+</p>
+
+<mat-form-field appearance="outline">
+  <mat-label>Container type</mat-label>
+  <mat-select [formControl]="typeFilter">
+    <mat-option [value]="null">All types</mat-option>
+    <mat-option *ngFor="let type of types" [value]="type.id">{{ type.code }} · {{ type.description }}</mat-option>
+  </mat-select>
+</mat-form-field>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<div class="table-wrapper mat-elevation-z1">
+  <table mat-table [dataSource]="tariffs" [trackBy]="trackById">
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let row"><strong class="mono">{{ row.containerType }}</strong></td>
+    </ng-container>
+
+    <ng-container matColumnDef="validity">
+      <th mat-header-cell *matHeaderCellDef>Valid</th>
+      <td mat-cell *matCellDef="let row">
+        {{ row.validFrom | date: 'dd MMM yyyy' }} –
+        {{ row.validTo ? (row.validTo | date: 'dd MMM yyyy') : 'no end date' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="free">
+      <th mat-header-cell *matHeaderCellDef>Free days</th>
+      <td mat-cell *matCellDef="let row">{{ row.freeDays }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="slabs">
+      <th mat-header-cell *matHeaderCellDef>Daily rate by day (USD)</th>
+      <td mat-cell *matCellDef="let row">{{ summary(row) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions"></th>
+      <td mat-cell *matCellDef="let row" class="actions">
+        <button mat-icon-button matTooltip="Edit" aria-label="Edit tariff" (click)="edit(row)"><mat-icon>edit</mat-icon></button>
+        <button mat-icon-button matTooltip="Delete" aria-label="Delete tariff" (click)="remove(row)"><mat-icon>delete</mat-icon></button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell empty" [attr.colspan]="columns.length">{{ loading ? 'Loading…' : 'No tariffs found.' }}</td>
+    </tr>
+  </table>
+</div>

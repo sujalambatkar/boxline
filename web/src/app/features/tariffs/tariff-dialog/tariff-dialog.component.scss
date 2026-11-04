@@ -1,0 +1,64 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+
+  h3 {
+    margin: 8px 0;
+    font-size: 16px;
+  }
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  mat-form-field {
+    flex: 1 1 220px;
+  }
+
+  .narrow {
+    flex: 0 1 140px;
+  }
+}
+
+.slab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+
+  .range {
+    min-width: 96px;
+    padding-top: 18px;
+  }
+
+  .to {
+    width: 130px;
+  }
+
+  .rate {
+    width: 150px;
+  }
+}
+
+.field-error {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: #b00020;
+  font-size: 13px;
+}
+
+.banner {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: #ffebee;
+  color: #b00020;
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+}

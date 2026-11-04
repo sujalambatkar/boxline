@@ -20,6 +20,9 @@
     <span class="status" *ngIf="c.current">
       Latest: <strong>{{ eventLabels[c.current.eventType] }}</strong> at {{ c.current.locationUnLocode }}
     </span>
+    <a *ngIf="c.events.length > 0" class="detention-link" routerLink="/detention" [queryParams]="{ container: c.containerNumber }">
+      Calculate detention
+    </a>
   </header>
 
   <app-timeline [events]="c.events"></app-timeline>

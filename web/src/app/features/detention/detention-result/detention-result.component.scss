@@ -1,0 +1,107 @@
+.result {
+  margin-top: 24px;
+  padding: 16px 24px 24px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.type,
+.booking {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.period {
+  margin: 8px 0 16px;
+}
+
+.ongoing {
+  padding: 10px 14px;
+  border-radius: 4px;
+  background: #fff3e0;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  margin: 0 0 24px;
+
+  dt {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+.breakdown {
+  width: 100%;
+  max-width: 640px;
+  border-collapse: collapse;
+
+  caption {
+    padding-bottom: 8px;
+    text-align: left;
+    font-weight: 500;
+  }
+
+  th,
+  td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .num {
+    text-align: right;
+  }
+
+  tfoot th {
+    text-align: right;
+  }
+
+  .total {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .none td {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.small {
+  max-width: 360px;
+}
+
+.note {
+  margin: 16px 0 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.tariff {
+  margin-top: 24px;
+  box-shadow: none;
+  border: 1px solid #e0e0e0;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}

@@ -1,0 +1,74 @@
+<section class="result" aria-label="Detention result">
+  <header class="head">
+    <h2 class="mono">{{ title }}</h2>
+    <span class="type" *ngIf="result.containerNumber">{{ result.containerType }}</span>
+    <span class="booking mono" *ngIf="result.bookingNumber">{{ result.bookingNumber }}</span>
+  </header>
+
+  <p class="period">
+    <strong>Out</strong> {{ result.outDate | date: 'EEE dd MMM yyyy' }}
+    <span *ngIf="startedByLabel">(clock started at {{ startedByLabel }})</span>
+    &nbsp;→&nbsp;
+    <strong>{{ result.isOngoing ? 'Today' : 'Return' }}</strong> {{ result.returnDate | date: 'EEE dd MMM yyyy' }}
+  </p>
+
+  <p class="ongoing" *ngIf="result.isOngoing" role="status">
+    This container has not been returned yet. The charge is calculated up to today and grows by the day.
+  </p>
+
+  <dl class="stats">
+    <div><dt>Calendar days</dt><dd data-testid="total-days">{{ result.totalDays }}</dd></div>
+    <div *ngIf="!result.countWeekendsAsChargeable"><dt>Weekend days skipped</dt><dd data-testid="weekend-days">{{ result.weekendDaysSkipped }}</dd></div>
+    <div><dt>Days counted</dt><dd data-testid="counted-days">{{ result.countedDays }}</dd></div>
+    <div><dt>Free days used</dt><dd data-testid="free-days">{{ result.freeDaysUsed }} of {{ result.tariff.freeDays }}</dd></div>
+    <div><dt>Chargeable days</dt><dd data-testid="chargeable-days">{{ result.chargeableDays }}</dd></div>
+  </dl>
+
+  <table class="breakdown">
+    <caption>Charge by slab</caption>
+    <thead>
+      <tr><th scope="col">Day numbers</th><th scope="col" class="num">Days charged</th><th scope="col" class="num">Rate per day</th><th scope="col" class="num">Amount</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="!hasCharge" class="none">
+        <td colspan="4">No charge: the period fits within the {{ result.tariff.freeDays }} free days.</td>
+      </tr>
+      <tr *ngFor="let slab of result.slabs" data-testid="slab-row">
+        <td class="mono">{{ range(slab) }}</td>
+        <td class="num">{{ slab.days }}</td>
+        <td class="num">{{ slab.ratePerDayUsd | currency: result.currency }}</td>
+        <td class="num">{{ slab.amountUsd | currency: result.currency }}</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="3">Total {{ result.isOngoing ? 'so far' : '' }}</th>
+        <td class="num total" data-testid="total">{{ result.totalAmountUsd | currency: result.currency }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="note" *ngIf="!result.countWeekendsAsChargeable">
+    Saturdays and Sundays were not counted: they did not use up free days and were not charged.
+  </p>
+
+  <mat-expansion-panel class="tariff">
+    <mat-expansion-panel-header>
+      <mat-panel-title>Tariff used</mat-panel-title>
+      <mat-panel-description>
+        {{ result.tariff.containerType }} · valid from {{ result.tariff.validFrom | date: 'dd MMM yyyy' }}
+        {{ result.tariff.validTo ? 'to ' + (result.tariff.validTo | date: 'dd MMM yyyy') : '(no end date)' }}
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <table class="breakdown small">
+      <thead><tr><th scope="col">Day numbers</th><th scope="col" class="num">Rate per day</th></tr></thead>
+      <tbody>
+        <tr><td>1–{{ result.tariff.freeDays }}</td><td class="num">Free</td></tr>
+        <tr *ngFor="let slab of result.tariff.slabs">
+          <td class="mono">{{ range(slab) }}</td>
+          <td class="num">{{ slab.ratePerDayUsd | currency: result.currency }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </mat-expansion-panel>
+</section>

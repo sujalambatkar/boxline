@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Tracking', icon: 'location_searching', path: '/tracking' },
   { label: 'Vessels', icon: 'directions_boat', path: '/vessels', roles: ['Ops'] },
   { label: 'Voyages', icon: 'route', path: '/voyages', roles: ['Ops'] },
+  { label: 'D&D calculator', icon: 'calculate', path: '/detention' },
   { label: 'Tariffs', icon: 'request_quote', path: '/tariffs', roles: ['Ops'] },
 ];
 

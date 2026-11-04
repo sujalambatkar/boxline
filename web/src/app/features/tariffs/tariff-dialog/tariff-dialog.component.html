@@ -1,0 +1,76 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit tariff' : 'Add tariff' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content class="content">
+    <div class="banner" *ngIf="serverErrors.length" role="alert">
+      <ul><li *ngFor="let message of serverErrors">{{ message }}</li></ul>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Container type</mat-label>
+        <mat-select formControlName="containerTypeId">
+          <mat-option *ngFor="let type of data.types" [value]="type.id">{{ type.code }} · {{ type.description }}</mat-option>
+        </mat-select>
+        <mat-error>Select a container type.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="narrow">
+        <mat-label>Free days</mat-label>
+        <input matInput type="number" formControlName="freeDays" min="0" max="60" />
+        <mat-error *ngIf="form.errors?.['freeDays']">{{ form.errors?.['freeDays'] }}</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Valid from</mat-label>
+        <input matInput type="date" formControlName="validFrom" />
+        <mat-error>Enter the start date.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Valid to (optional)</mat-label>
+        <input matInput type="date" formControlName="validTo" />
+        <mat-hint>Leave empty for no end date</mat-hint>
+      </mat-form-field>
+    </div>
+    <p class="field-error" *ngIf="form.errors?.['validTo']" role="alert">{{ form.errors?.['validTo'] }}</p>
+
+    <h3>Daily rate by day</h3>
+    <div formArrayName="slabs">
+      <div class="slab" *ngFor="let slab of slabs.controls; let i = index" [formGroupName]="i">
+        <span class="range">
+          Day <strong>{{ startDay(i) }}</strong> to
+        </span>
+
+        <mat-form-field appearance="outline" class="to">
+          <mat-label>{{ isLast(i) ? 'and beyond' : 'Last day' }}</mat-label>
+          <input matInput type="number" formControlName="toDay" min="1" [attr.aria-label]="'Last day of slab ' + (i + 1)" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="rate">
+          <mat-label>USD per day</mat-label>
+          <input matInput type="number" formControlName="ratePerDayUsd" min="0" step="0.01" [attr.aria-label]="'Daily rate of slab ' + (i + 1)" />
+        </mat-form-field>
+
+        <button mat-icon-button type="button" aria-label="Remove slab" (click)="removeSlab(i)" [disabled]="slabs.length <= 1">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <ul class="field-error" *ngIf="slabProblems.length" role="alert">
+      <li *ngFor="let problem of slabProblems">{{ problem }}</li>
+    </ul>
+
+    <button mat-stroked-button type="button" (click)="addSlab()" [disabled]="slabs.length >= maxSlabs">
+      <mat-icon>add</mat-icon> Add slab
+    </button>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </mat-dialog-actions>
+</form>

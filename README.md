@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 to 4 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages); see the roadmap below.
+> Work in progress. Phases 0 to 5 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator); see the roadmap below.
 
 ## Stack
 
@@ -108,6 +108,30 @@ messages only after joining its group, joining and sending both re-check access,
 
 In Development, three fictional vessels with two sailings each on the Shanghai to Hamburg lane are seeded.
 
+## Detention and demurrage
+
+A **tariff** gives a container type some free days and then a daily rate that steps up in slabs. Slabs use
+absolute day numbers: with 5 free days, for example days 6-10 at $40, days 11-15 at $80 and day 16 onwards at
+$120. The first slab must start the day after the free days, slabs must be contiguous, only the last is
+open-ended, and validity periods of one container type cannot overlap.
+
+How a period is priced (`DetentionCalculator`):
+
+- Days are **calendar days, both the out date and the return date included**, so a same-day return is one day.
+- The first *free days* counted days are free; each later day is charged at the rate of the slab containing its day number.
+- With **weekends not chargeable**, Saturdays and Sundays are skipped completely: they neither use up free days
+  nor cost anything, and day numbering only counts the other days.
+- The tariff used is the one valid on the **out date**; a return before the out date is an error.
+- For a container, the clock starts at *gate out full* (or *delivered* if no gate out was recorded) and stops at
+  *empty returned*. If it has not come back, the charge runs up to today and is shown as ongoing.
+
+The same calculation also exists as the SQL Server stored procedure `usp_CalculateDetention` (created by a
+migration). Integration tests run identical cases through both against the real database (every start weekday,
+lengths up to 45 days, several tariff shapes, very long stays, and the error cases) and require identical
+breakdowns; `POST /api/detention/calculate` accepts `"engine": "Sql"` to run it in the database. Shippers can
+price only containers that travelled under their own bookings. Ops manage tariffs at `/tariffs`; everyone uses
+the calculator at `/detention`.
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -129,7 +153,7 @@ scripts/test.sh       # .NET + Angular tests
 2. Auth and bookings (done)
 3. Container movements, tracking and live chat (done)
 4. Vessels and voyages (done)
-5. Tariffs and detention/demurrage calculator
+5. Tariffs and detention/demurrage calculator (done)
 6. Documents (Bill of Lading PDF, exports)
 7. Performance demo
 8. Polish and documentation

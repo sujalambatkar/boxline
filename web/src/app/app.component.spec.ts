@@ -73,17 +73,18 @@ describe('AppComponent', () => {
       'location_searchingTracking',
       'directions_boatVessels',
       'routeVoyages',
+      'calculateD&D calculator',
       'request_quoteTariffs',
     ]);
     expect(el().querySelector('[data-testid="user"]')?.textContent).toContain('ops@boxline.test · Ops');
   });
 
-  it('shows shippers only bookings and tracking, labelled with their company', () => {
+  it('shows shippers bookings, tracking and the calculator, labelled with their company', () => {
     create();
     user$.next(shipper);
     fixture.detectChanges();
 
-    expect(navLabels()).toEqual(['inventory_2Bookings', 'location_searchingTracking']);
+    expect(navLabels()).toEqual(['inventory_2Bookings', 'location_searchingTracking', 'calculateD&D calculator']);
     expect(el().querySelector('[data-testid="user"]')?.textContent).toContain('Acme Exports · Shipper');
   });
 
