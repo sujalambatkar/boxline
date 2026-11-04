@@ -79,6 +79,8 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PolId");
 
+                    b.HasIndex("VoyageId");
+
                     b.HasIndex("ShipperId", "CreatedAt");
 
                     b.HasIndex("Status", "CreatedAt");
@@ -335,6 +337,110 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.Vessel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ImoNumber")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .IsUnicode(false)
+                        .HasColumnType("char(7)")
+                        .IsFixedLength();
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImoNumber")
+                        .IsUnique();
+
+                    b.ToTable("Vessels");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.Voyage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("VesselId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VoyageNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VesselId");
+
+                    b.HasIndex("VoyageNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "Id");
+
+                    b.ToTable("Voyages");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.VoyageCall", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("Ata")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Atd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Eta")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Etd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PortId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VoyageId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PortId");
+
+                    b.HasIndex("VoyageId", "PortId")
+                        .IsUnique();
+
+                    b.HasIndex("VoyageId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("VoyageCalls");
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Booking", b =>
                 {
                     b.HasOne("BoxLine.Core.Entities.Port", "Pod")
@@ -355,11 +461,18 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("BoxLine.Core.Entities.Voyage", "Voyage")
+                        .WithMany()
+                        .HasForeignKey("VoyageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Pod");
 
                     b.Navigation("Pol");
 
                     b.Navigation("Shipper");
+
+                    b.Navigation("Voyage");
                 });
 
             modelBuilder.Entity("BoxLine.Core.Entities.BookingLine", b =>
@@ -431,9 +544,42 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.Navigation("Container");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.Voyage", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.Vessel", "Vessel")
+                        .WithMany()
+                        .HasForeignKey("VesselId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Vessel");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.VoyageCall", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.Port", "Port")
+                        .WithMany()
+                        .HasForeignKey("PortId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BoxLine.Core.Entities.Voyage", null)
+                        .WithMany("Calls")
+                        .HasForeignKey("VoyageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Port");
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Booking", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.Voyage", b =>
+                {
+                    b.Navigation("Calls");
                 });
 #pragma warning restore 612, 618
         }

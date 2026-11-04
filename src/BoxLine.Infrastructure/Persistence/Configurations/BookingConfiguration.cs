@@ -18,10 +18,12 @@ public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasIndex(b => new { b.Status, b.CreatedAt });
         builder.HasIndex(b => b.PolId);
         builder.HasIndex(b => b.PodId);
+        builder.HasIndex(b => b.VoyageId);
 
         builder.HasOne(b => b.Shipper).WithMany().HasForeignKey(b => b.ShipperId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(b => b.Pol).WithMany().HasForeignKey(b => b.PolId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(b => b.Pod).WithMany().HasForeignKey(b => b.PodId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(b => b.Voyage).WithMany().HasForeignKey(b => b.VoyageId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(b => b.Lines).WithOne().HasForeignKey(l => l.BookingId).OnDelete(DeleteBehavior.Cascade);
     }
 }

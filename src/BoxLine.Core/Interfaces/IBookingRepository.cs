@@ -18,6 +18,9 @@ public interface IBookingRepository
     /// <summary>The owning shipper's id, or null when the booking does not exist. A cheap access check.</summary>
     Task<int?> GetShipperIdAsync(int bookingId, CancellationToken cancellationToken);
 
+    /// <summary>The bookings linked to a voyage, without their lines (untracked).</summary>
+    Task<IReadOnlyList<Booking>> ListByVoyageAsync(int voyageId, CancellationToken cancellationToken);
+
     /// <summary>Assigns the next booking number for the booking's month and inserts it, retrying on a number clash.</summary>
     Task AddAsync(Booking booking, CancellationToken cancellationToken);
 

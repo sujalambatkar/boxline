@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using BoxLine.Core.Bookings;
 using BoxLine.Core.Entities;
+using BoxLine.Core.Voyages;
 
 namespace BoxLine.Api.Contracts;
 
@@ -12,15 +13,23 @@ public sealed record CreateBookingRequest(
     int PodId,
     [Required] string CargoDescription,
     [Required] List<BookingLineRequest> Lines,
-    int? ShipperId = null);
+    int? ShipperId = null,
+    int? VoyageId = null);
 
 /// <param name="RowVersion">The version returned when the booking was loaded; a stale value is rejected with 409.</param>
+/// <param name="VoyageId">The sailing to travel on. The update replaces the booking's content, so omitting it removes the voyage.</param>
 public sealed record UpdateBookingRequest(
     int PolId,
     int PodId,
     [Required] string CargoDescription,
     [Required] List<BookingLineRequest> Lines,
-    string? RowVersion = null);
+    string? RowVersion = null,
+    int? VoyageId = null);
+
+public sealed record AssignVoyageRequest(int? VoyageId);
+
+/// <summary>The sailing a booking is on, with the departure at its loading port and the arrival at its discharge port.</summary>
+public sealed record BookingVoyageSummary(int Id, string VoyageNumber, string VesselName, DateTime? Departure, DateTime? Arrival);
 
 public sealed record PortSummary(int Id, string UnLocode, string Name)
 {
@@ -37,6 +46,7 @@ public sealed record BookingResponse(
     PortSummary Pol,
     PortSummary Pod,
     int? VoyageId,
+    BookingVoyageSummary? Voyage,
     string CargoDescription,
     BookingStatus Status,
     IReadOnlyList<BookingStatus> AllowedTransitions,
@@ -54,6 +64,7 @@ public sealed record BookingResponse(
         PortSummary.From(booking.Pol),
         PortSummary.From(booking.Pod),
         booking.VoyageId,
+        VoyageSummary(booking),
         booking.CargoDescription,
         booking.Status,
         BookingWorkflow.NextStatuses(booking.Status),
@@ -65,4 +76,14 @@ public sealed record BookingResponse(
             .OrderBy(l => l.ContainerType?.Code)
             .Select(l => new BookingLineResponse(l.Id, l.ContainerTypeId, l.ContainerType?.Code ?? string.Empty, l.Quantity))
             .ToList());
+
+    private static BookingVoyageSummary? VoyageSummary(Booking booking) =>
+        booking.Voyage is null
+            ? null
+            : new BookingVoyageSummary(
+                booking.Voyage.Id,
+                booking.Voyage.VoyageNumber,
+                booking.Voyage.Vessel?.Name ?? string.Empty,
+                CallResponse.Utc(VoyageRotation.Departure(booking.Voyage.Calls, booking.PolId)),
+                CallResponse.Utc(VoyageRotation.Arrival(booking.Voyage.Calls, booking.PodId)));
 }

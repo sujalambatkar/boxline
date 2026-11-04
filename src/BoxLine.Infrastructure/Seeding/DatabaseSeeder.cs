@@ -1,5 +1,6 @@
 using BoxLine.Core.Containers;
 using BoxLine.Core.Entities;
+using BoxLine.Core.Vessels;
 using BoxLine.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,6 +43,7 @@ public sealed class DatabaseSeeder(BoxLineDbContext db)
         await SeedPortsAsync(cancellationToken);
         await SeedContainerTypesAsync(cancellationToken);
         await SeedContainersAsync(cancellationToken);
+        await SeedVoyagesAsync(cancellationToken);
     }
 
     private async Task SeedPortsAsync(CancellationToken cancellationToken)
@@ -78,6 +80,63 @@ public sealed class DatabaseSeeder(BoxLineDbContext db)
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>Three fictional vessels, each with two upcoming voyages on the Asia to Europe lane, so schedules have something to show.</summary>
+    private async Task SeedVoyagesAsync(CancellationToken cancellationToken)
+    {
+        if (await db.Vessels.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var ports = await db.Ports.ToDictionaryAsync(p => p.UnLocode, p => p.Id, cancellationToken);
+        if (new[] { "CNSHA", "SGSIN", "INNSA", "AEJEA", "NLRTM", "DEHAM" }.Any(code => !ports.ContainsKey(code)))
+        {
+            return;
+        }
+
+        var names = new[] { "MV BoxLine Aurora", "MV BoxLine Meridian", "MV BoxLine Zephyr" };
+        var vessels = names
+            .Select((name, i) => new Vessel { Name = name, ImoNumber = ImoNumbers.WithCheckDigit(990001 + i) })
+            .ToList();
+        db.Vessels.AddRange(vessels);
+        await db.SaveChangesAsync(cancellationToken);
+
+        // Shanghai - Singapore - Nhava Sheva - Jebel Ali - Rotterdam - Hamburg; each leg takes a few days.
+        string[] lane = ["CNSHA", "SGSIN", "INNSA", "AEJEA", "NLRTM", "DEHAM"];
+        double[] legDays = [6, 7, 4, 17, 2];
+        var first = DateTime.UtcNow.Date.AddDays(3).AddHours(8);
+
+        for (var v = 0; v < vessels.Count; v++)
+        {
+            for (var round = 0; round < 2; round++)
+            {
+                var departure = first.AddDays((v * 7) + (round * 28));
+                var calls = new List<VoyageCall>();
+                var clock = departure;
+                for (var i = 0; i < lane.Length; i++)
+                {
+                    var arrival = i == 0 ? (DateTime?)null : clock;
+                    DateTime? departureAt = i == lane.Length - 1 ? null : (i == 0 ? clock : clock.AddHours(14));
+                    calls.Add(new VoyageCall { PortId = ports[lane[i]], Sequence = i + 1, Eta = arrival, Etd = departureAt });
+                    if (i < legDays.Length)
+                    {
+                        clock = (departureAt ?? clock).AddDays(legDays[i]);
+                    }
+                }
+
+                db.Voyages.Add(new Voyage
+                {
+                    VesselId = vessels[v].Id,
+                    VoyageNumber = $"BXL{departure:yyMM}{(char)('A' + v)}{round + 1}",
+                    Status = VoyageStatus.Scheduled,
+                    Calls = calls,
+                });
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     /// <summary>Generates deterministic containers with valid ISO 6346 check digits.</summary>
     internal static IEnumerable<Container> GenerateContainers(IReadOnlyList<int> typeIds, int count)
     {
@@ -110,4 +169,10 @@ public sealed class DatabaseSeeder(BoxLineDbContext db)
             };
         }
     }
+}
+
+internal static class ImoNumbers
+{
+    /// <summary>Builds a valid seven-digit IMO number from its first six digits.</summary>
+    public static string WithCheckDigit(int firstSix) => $"{firstSix}{ImoNumber.ComputeCheckDigit(firstSix.ToString())}";
 }

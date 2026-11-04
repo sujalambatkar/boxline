@@ -1,6 +1,7 @@
 using BoxLine.Core.Common;
 using BoxLine.Core.Entities;
 using BoxLine.Core.Interfaces;
+using BoxLine.Core.Voyages;
 
 namespace BoxLine.Core.Bookings;
 
@@ -9,14 +10,17 @@ public sealed record CreateBookingCommand(
     int PolId,
     int PodId,
     string? CargoDescription,
-    IReadOnlyList<BookingLineDraft> Lines);
+    IReadOnlyList<BookingLineDraft> Lines,
+    int? VoyageId = null);
 
+/// <param name="VoyageId">The sailing the booking travels on; null leaves the booking without one.</param>
 public sealed record UpdateBookingCommand(
     int PolId,
     int PodId,
     string? CargoDescription,
     IReadOnlyList<BookingLineDraft> Lines,
-    byte[]? RowVersion);
+    byte[]? RowVersion,
+    int? VoyageId = null);
 
 /// <summary>
 /// Booking use cases. Enforces who may see and change a booking (shippers only their own, Ops everything),
@@ -27,6 +31,7 @@ public sealed class BookingService(
     IPortRepository ports,
     IContainerTypeRepository containerTypes,
     IUserRepository users,
+    IVoyageRepository voyages,
     TimeProvider clock)
 {
     public const int MaxPageSize = 100;
@@ -36,7 +41,7 @@ public sealed class BookingService(
     {
         var shipperId = await ResolveShipperIdAsync(actor, command.ShipperId, cancellationToken);
         var draft = new BookingDraft(command.PolId, command.PodId, command.CargoDescription, command.Lines);
-        await ValidateAsync(draft, cancellationToken);
+        await ValidateAsync(draft, command.VoyageId, currentVoyageId: null, cancellationToken);
 
         var now = clock.GetUtcNow().UtcDateTime;
         var booking = new Booking
@@ -44,6 +49,7 @@ public sealed class BookingService(
             ShipperId = shipperId,
             PolId = command.PolId,
             PodId = command.PodId,
+            VoyageId = command.VoyageId,
             CargoDescription = command.CargoDescription!.Trim(),
             Status = BookingStatus.Draft,
             CreatedAt = now,
@@ -64,16 +70,50 @@ public sealed class BookingService(
             throw new ConflictException($"Only draft bookings can be edited; this booking is {booking.Status}.");
         }
 
-        await ValidateAsync(new BookingDraft(command.PolId, command.PodId, command.CargoDescription, command.Lines), cancellationToken);
+        await ValidateAsync(
+            new BookingDraft(command.PolId, command.PodId, command.CargoDescription, command.Lines),
+            command.VoyageId,
+            booking.VoyageId,
+            cancellationToken);
 
         booking.PolId = command.PolId;
         booking.PodId = command.PodId;
+        booking.VoyageId = command.VoyageId;
         booking.CargoDescription = command.CargoDescription!.Trim();
         booking.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         booking.Lines.Clear();
         booking.Lines.AddRange(command.Lines.Select(l => new BookingLine { ContainerTypeId = l.ContainerTypeId, Quantity = l.Quantity }));
 
         await bookings.UpdateAsync(booking, command.RowVersion, cancellationToken);
+        return await GetAsync(actor, id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Puts a booking on a sailing (or takes it off with null). Ops only; shippers choose a sailing when they
+    /// create or edit a draft. Cancelled bookings cannot be moved.
+    /// </summary>
+    public async Task<Booking> AssignVoyageAsync(Actor actor, int id, int? voyageId, CancellationToken cancellationToken)
+    {
+        if (!actor.IsOps)
+        {
+            throw new ForbiddenException("Only operations staff can assign a booking to a voyage.");
+        }
+
+        var booking = await LoadForActorAsync(actor, id, cancellationToken);
+        if (booking.Status == BookingStatus.Cancelled)
+        {
+            throw new ConflictException("A cancelled booking cannot be assigned to a voyage.");
+        }
+
+        if (voyageId is not null)
+        {
+            await EnsureVoyageServesAsync(voyageId.Value, booking.PolId, booking.PodId, booking.VoyageId, cancellationToken);
+        }
+
+        booking.VoyageId = voyageId;
+        booking.UpdatedAt = clock.GetUtcNow().UtcDateTime;
+        await bookings.UpdateAsync(booking, expectedRowVersion: null, cancellationToken);
+
         return await GetAsync(actor, id, cancellationToken);
     }
 
@@ -146,7 +186,7 @@ public sealed class BookingService(
         return shipper.Id;
     }
 
-    private async Task ValidateAsync(BookingDraft draft, CancellationToken cancellationToken)
+    private async Task ValidateAsync(BookingDraft draft, int? voyageId, int? currentVoyageId, CancellationToken cancellationToken)
     {
         var errors = BookingRules.Validate(draft).ToDictionary(e => e.Key, e => e.Value.ToList());
 
@@ -160,12 +200,14 @@ public sealed class BookingService(
             list.Add(message);
         }
 
-        if (await ports.GetByIdAsync(draft.PolId, cancellationToken) is null)
+        var pol = await ports.GetByIdAsync(draft.PolId, cancellationToken);
+        if (pol is null)
         {
             Add("PolId", "Port of loading does not exist.");
         }
 
-        if (draft.PodId != draft.PolId && await ports.GetByIdAsync(draft.PodId, cancellationToken) is null)
+        var pod = draft.PodId == draft.PolId ? pol : await ports.GetByIdAsync(draft.PodId, cancellationToken);
+        if (pod is null && draft.PodId != draft.PolId)
         {
             Add("PodId", "Port of discharge does not exist.");
         }
@@ -179,6 +221,31 @@ public sealed class BookingService(
         if (errors.Count > 0)
         {
             throw new DomainValidationException(errors.ToDictionary(e => e.Key, e => e.Value.ToArray()));
+        }
+
+        if (voyageId is not null)
+        {
+            await EnsureVoyageServesAsync(voyageId.Value, draft.PolId, draft.PodId, currentVoyageId, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// The voyage must exist, sail from the loading port to the discharge port in that order and, unless the
+    /// booking is already on it, still be open for bookings from that port.
+    /// </summary>
+    private async Task EnsureVoyageServesAsync(int voyageId, int polId, int podId, int? currentVoyageId, CancellationToken cancellationToken)
+    {
+        var voyage = await voyages.GetReadOnlyAsync(voyageId, cancellationToken)
+            ?? throw new DomainValidationException("VoyageId", "Voyage does not exist.");
+
+        var pol = await ports.GetByIdAsync(polId, cancellationToken);
+        var pod = await ports.GetByIdAsync(podId, cancellationToken);
+        VoyageRotation.EnsureServes(voyage, pol!, pod!);
+
+        if (voyageId != currentVoyageId && !VoyageRotation.IsOpenForBooking(voyage, polId))
+        {
+            throw new DomainValidationException(
+                "VoyageId", $"Voyage {voyage.VoyageNumber} is {voyage.Status.ToString().ToLowerInvariant()} and is not taking bookings from {pol!.UnLocode}.");
         }
     }
 }

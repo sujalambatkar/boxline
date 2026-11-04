@@ -22,6 +22,12 @@ public class BoxLineDbContext(DbContextOptions<BoxLineDbContext> options) : DbCo
 
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
+    public DbSet<Vessel> Vessels => Set<Vessel>();
+
+    public DbSet<Voyage> Voyages => Set<Voyage>();
+
+    public DbSet<VoyageCall> VoyageCalls => Set<VoyageCall>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BoxLineDbContext).Assembly);

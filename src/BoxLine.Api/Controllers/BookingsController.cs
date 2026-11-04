@@ -47,7 +47,7 @@ public sealed class BookingsController(BookingService bookings) : ControllerBase
     public async Task<ActionResult<BookingResponse>> Create(CreateBookingRequest request, CancellationToken ct)
     {
         var command = new CreateBookingCommand(
-            request.ShipperId, request.PolId, request.PodId, request.CargoDescription, ToDrafts(request.Lines));
+            request.ShipperId, request.PolId, request.PodId, request.CargoDescription, ToDrafts(request.Lines), request.VoyageId);
         var booking = await bookings.CreateAsync(User.ToActor(), command, ct);
 
         return CreatedAtAction(nameof(Get), new { id = booking.Id }, BookingResponse.From(booking));
@@ -72,10 +72,19 @@ public sealed class BookingsController(BookingService bookings) : ControllerBase
         }
 
         var command = new UpdateBookingCommand(
-            request.PolId, request.PodId, request.CargoDescription, ToDrafts(request.Lines), rowVersion);
+            request.PolId, request.PodId, request.CargoDescription, ToDrafts(request.Lines), rowVersion, request.VoyageId);
 
         return BookingResponse.From(await bookings.UpdateAsync(User.ToActor(), id, command, ct));
     }
+
+    /// <summary>
+    /// Puts a booking on a sailing, or takes it off with a null voyage. Operations staff only; the voyage must
+    /// sail from the booking's loading port to its discharge port, in that order.
+    /// </summary>
+    [HttpPut("{id:int}/voyage")]
+    [Authorize(Roles = Roles.Ops)]
+    public async Task<ActionResult<BookingResponse>> AssignVoyage(int id, AssignVoyageRequest request, CancellationToken ct) =>
+        BookingResponse.From(await bookings.AssignVoyageAsync(User.ToActor(), id, request.VoyageId, ct));
 
     [HttpPost("{id:int}/confirm")]
     public async Task<ActionResult<BookingResponse>> Confirm(int id, CancellationToken ct) =>

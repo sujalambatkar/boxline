@@ -8,6 +8,7 @@ using BoxLine.Api.Hubs;
 using BoxLine.Core.Bookings;
 using BoxLine.Core.Chat;
 using BoxLine.Core.Movements;
+using BoxLine.Core.Voyages;
 using BoxLine.Core.Entities;
 using BoxLine.Infrastructure;
 using BoxLine.Infrastructure.Seeding;
@@ -34,6 +35,8 @@ builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<BookingService>();
 builder.Services.AddScoped<MovementService>();
 builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<VoyageService>();
+builder.Services.AddScoped<ScheduleService>();
 builder.Services.AddSignalR()
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddScoped<DevelopmentUserSeeder>();

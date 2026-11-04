@@ -71,6 +71,8 @@ public sealed class BookingRepository(BoxLineDbContext db) : IBookingRepository
             .Include(b => b.Shipper)
             .Include(b => b.Pol)
             .Include(b => b.Pod)
+            .Include(b => b.Voyage).ThenInclude(v => v!.Vessel)
+            .Include(b => b.Voyage).ThenInclude(v => v!.Calls)
             .Include(b => b.Lines).ThenInclude(l => l.ContainerType)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
@@ -83,9 +85,14 @@ public sealed class BookingRepository(BoxLineDbContext db) : IBookingRepository
             .Include(b => b.Shipper)
             .Include(b => b.Pol)
             .Include(b => b.Pod)
+            .Include(b => b.Voyage).ThenInclude(v => v!.Vessel)
+            .Include(b => b.Voyage).ThenInclude(v => v!.Calls)
             .Include(b => b.Lines).ThenInclude(l => l.ContainerType)
             .AsSplitQuery()
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<Booking>> ListByVoyageAsync(int voyageId, CancellationToken cancellationToken) =>
+        await db.Bookings.AsNoTracking().Where(b => b.VoyageId == voyageId).OrderBy(b => b.BookingNumber).ToListAsync(cancellationToken);
 
     public Task<Booking?> GetByNumberAsync(string bookingNumber, CancellationToken cancellationToken) =>
         db.Bookings

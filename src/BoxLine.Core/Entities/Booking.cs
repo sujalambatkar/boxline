@@ -29,8 +29,10 @@ public class Booking
 
     public Port? Pod { get; set; }
 
-    /// <summary>The voyage carrying the booking. Assigned in a later phase; null until then.</summary>
+    /// <summary>The voyage carrying the booking; null until one is chosen.</summary>
     public int? VoyageId { get; set; }
+
+    public Voyage? Voyage { get; set; }
 
     public string CargoDescription { get; set; } = string.Empty;
 
