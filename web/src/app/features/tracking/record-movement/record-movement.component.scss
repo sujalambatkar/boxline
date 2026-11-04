@@ -1,0 +1,35 @@
+.form h3 {
+  margin: 0 0 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  mat-form-field {
+    flex: 1 1 220px;
+  }
+
+  .wide {
+    flex: 2 1 320px;
+  }
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.banner {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: #ffebee;
+  color: #b00020;
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+}

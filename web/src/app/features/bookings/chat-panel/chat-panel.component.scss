@@ -1,0 +1,104 @@
+.chat {
+  margin-top: 32px;
+  padding: 16px 24px 24px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.state {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: #e0e0e0;
+
+  &[data-state='connected'] {
+    background: #c8e6c9;
+  }
+
+  &[data-state='reconnecting'],
+  &[data-state='connecting'] {
+    background: #fff3e0;
+  }
+}
+
+.error {
+  margin: 12px 0 0;
+  color: #b00020;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 320px;
+  margin: 16px 0;
+  padding: 12px;
+  overflow-y: auto;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.empty {
+  margin: auto;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.message {
+  align-self: flex-start;
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #e8eaf6;
+
+  &.mine {
+    align-self: flex-end;
+    background: #c5cae9;
+  }
+
+  .meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .role {
+    padding: 0 6px;
+    border-radius: 8px;
+    background: #3f51b5;
+    color: #fff;
+  }
+
+  .text {
+    margin: 4px 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.compose {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .input {
+    flex: 1;
+  }
+
+  button {
+    height: 56px;
+  }
+}

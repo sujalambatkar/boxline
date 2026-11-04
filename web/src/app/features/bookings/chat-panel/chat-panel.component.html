@@ -1,0 +1,34 @@
+<section class="chat" aria-label="Booking conversation">
+  <header class="head">
+    <h2>Conversation</h2>
+    <span class="state" [attr.data-state]="state" role="status">{{ stateLabels[state] }}</span>
+    <button mat-button type="button" *ngIf="state === 'disconnected'" (click)="retry()">Retry</button>
+  </header>
+
+  <p class="error" *ngIf="error" role="alert">{{ error }}</p>
+
+  <div class="messages" #scroller tabindex="0" aria-live="polite">
+    <p class="empty" *ngIf="messages.length === 0">
+      {{ state === 'connected' ? 'No messages yet. Say hello.' : 'Messages will appear here.' }}
+    </p>
+
+    <div class="message" *ngFor="let message of messages; trackBy: trackById" [class.mine]="isMine(message)">
+      <div class="meta">
+        <strong>{{ message.senderName }}</strong>
+        <span class="role" *ngIf="message.senderRole === 'Ops'">BoxLine</span>
+        <time [attr.datetime]="message.sentAt">{{ message.sentAt | date: 'dd MMM, HH:mm' }}</time>
+      </div>
+      <p class="text">{{ message.text }}</p>
+    </div>
+  </div>
+
+  <form class="compose" (ngSubmit)="send()">
+    <mat-form-field appearance="outline" class="input">
+      <mat-label>Message</mat-label>
+      <textarea matInput [formControl]="text" rows="2" [maxlength]="maxLength"
+        (keydown.enter)="onEnter($event)" [attr.aria-disabled]="state !== 'connected'"></textarea>
+      <mat-hint>Enter to send · Shift+Enter for a new line</mat-hint>
+    </mat-form-field>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!canSend">Send</button>
+  </form>
+</section>

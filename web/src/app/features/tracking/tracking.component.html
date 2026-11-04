@@ -1,2 +1,57 @@
 <h1>Tracking</h1>
-<p>Follow containers through their movement events.</p>
+<p class="intro">Enter a container number (e.g. CSQU3054383) or a booking number (e.g. BL-202611-0001).</p>
+
+<form class="search" (ngSubmit)="search()">
+  <mat-form-field appearance="outline" class="field">
+    <mat-label>Container or booking number</mat-label>
+    <input matInput [formControl]="query" autocomplete="off" spellcheck="false" class="mono" />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <button mat-flat-button color="primary" type="submit" [disabled]="!query.value.trim()">Track</button>
+</form>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+<p class="message" *ngIf="message" role="status">{{ message }}</p>
+
+<section *ngIf="container as c" class="card">
+  <header>
+    <h2 class="mono">{{ c.containerNumber }}</h2>
+    <span class="type">{{ c.containerType }}</span>
+    <span class="status" *ngIf="c.current">
+      Latest: <strong>{{ eventLabels[c.current.eventType] }}</strong> at {{ c.current.locationUnLocode }}
+    </span>
+  </header>
+
+  <app-timeline [events]="c.events"></app-timeline>
+
+  <ng-container *ngIf="isOps && c.allowedNextEvents.length > 0">
+    <hr />
+    <app-record-movement [container]="c" (recorded)="refresh()"></app-record-movement>
+  </ng-container>
+</section>
+
+<section *ngIf="booking as b" class="card">
+  <header>
+    <h2 class="mono">{{ b.bookingNumber }}</h2>
+    <span class="chip" [attr.data-status]="b.status">{{ statusLabels[b.status] }}</span>
+    <span class="status">
+      <span class="mono">{{ b.pol.unLocode }}</span> → <span class="mono">{{ b.pod.unLocode }}</span>
+    </span>
+  </header>
+
+  <p class="message" *ngIf="b.containers.length === 0">No container movements have been recorded for this booking yet.</p>
+
+  <mat-accordion multi>
+    <mat-expansion-panel *ngFor="let c of b.containers" [expanded]="b.containers.length === 1">
+      <mat-expansion-panel-header>
+        <mat-panel-title class="mono">{{ c.containerNumber }}</mat-panel-title>
+        <mat-panel-description>
+          {{ c.containerType }} ·
+          {{ c.current ? eventLabels[c.current.eventType] + ' at ' + c.current.locationUnLocode : 'No events' }}
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <app-timeline [events]="c.events"></app-timeline>
+      <button mat-button type="button" (click)="open(c.containerNumber)" *ngIf="isOps">Open container</button>
+    </mat-expansion-panel>
+  </mat-accordion>
+</section>

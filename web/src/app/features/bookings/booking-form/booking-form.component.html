@@ -10,6 +10,7 @@
 
   <p class="meta" *ngIf="booking">
     <span *ngIf="isOps">Shipper: <strong>{{ booking.shipperName }}</strong> · </span>
+    <a [routerLink]="['/tracking']" [queryParams]="{ q: booking.bookingNumber }">Track this booking</a> ·
     Created {{ booking.createdAt | date: 'dd MMM yyyy, HH:mm' }} · Updated {{ booking.updatedAt | date: 'dd MMM yyyy, HH:mm' }}
   </p>
 
@@ -113,4 +114,6 @@
       </button>
     </div>
   </form>
+
+  <app-chat-panel *ngIf="booking" [bookingId]="booking.id"></app-chat-panel>
 </ng-container>

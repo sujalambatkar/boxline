@@ -1,0 +1,52 @@
+<form [formGroup]="form" (ngSubmit)="save()" novalidate class="form">
+  <h3>Record next event</h3>
+
+  <div class="banner" *ngIf="serverErrors.length" role="alert">
+    <ul>
+      <li *ngFor="let message of serverErrors">{{ message }}</li>
+    </ul>
+  </div>
+
+  <div class="row">
+    <mat-form-field appearance="outline">
+      <mat-label>Event</mat-label>
+      <mat-select formControlName="eventType">
+        <mat-option *ngFor="let type of container.allowedNextEvents" [value]="type">{{ labels[type] }}</mat-option>
+      </mat-select>
+      <mat-hint>Only the next stage of the cycle is allowed.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Location (UN/LOCODE)</mat-label>
+      <input matInput formControlName="locationUnLocode" placeholder="INNSA" autocomplete="off" class="mono" />
+      <mat-error *ngIf="form.controls.locationUnLocode.hasError('required')">Location is required.</mat-error>
+      <mat-error *ngIf="form.controls.locationUnLocode.hasError('pattern')">
+        Two letters, then three letters or digits 2-9 (e.g. INNSA).
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Occurred at</mat-label>
+      <input matInput type="datetime-local" formControlName="occurredAt" [max]="nowInput" />
+      <mat-error>Enter when the event happened.</mat-error>
+    </mat-form-field>
+  </div>
+
+  <div class="row">
+    <mat-form-field appearance="outline">
+      <mat-label>Booking number (optional)</mat-label>
+      <input matInput formControlName="bookingNumber" placeholder="BL-202611-0001" autocomplete="off" class="mono" />
+      <mat-hint>Must be a confirmed booking.</mat-hint>
+      <mat-error>Format: BL-YYYYMM-0000.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="wide">
+      <mat-label>Remarks (optional)</mat-label>
+      <input matInput formControlName="remarks" [maxlength]="maxRemarks" autocomplete="off" />
+    </mat-form-field>
+  </div>
+
+  <button mat-flat-button color="primary" type="submit" [disabled]="saving">
+    {{ saving ? 'Recording…' : 'Record event' }}
+  </button>
+</form>

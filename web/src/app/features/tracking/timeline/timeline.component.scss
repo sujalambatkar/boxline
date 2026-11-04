@@ -1,0 +1,85 @@
+.empty {
+  margin: 8px 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.timeline {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  padding-bottom: 20px;
+
+  // the connecting line between markers
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 36px;
+    bottom: 0;
+    left: 17px;
+    width: 2px;
+    background: #c5cae9;
+  }
+}
+
+.marker {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e8eaf6;
+  color: #3f51b5;
+
+  .latest & {
+    background: #3f51b5;
+    color: #fff;
+  }
+}
+
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding-top: 6px;
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.loc,
+.when,
+.booking {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 13px;
+}
+
+.current {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #c8e6c9;
+  font-size: 11px;
+}
+
+.remarks {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+}

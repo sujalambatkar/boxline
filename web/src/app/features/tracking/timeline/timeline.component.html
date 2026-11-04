@@ -1,0 +1,17 @@
+<p class="empty" *ngIf="events.length === 0">No movements recorded yet.</p>
+
+<ol class="timeline" *ngIf="events.length > 0" aria-label="Container movements">
+  <li *ngFor="let event of events; let i = index; trackBy: trackById" class="event" [class.latest]="isLatest(i)">
+    <span class="marker" aria-hidden="true"><mat-icon>{{ icon(event.eventType) }}</mat-icon></span>
+    <div class="body">
+      <div class="title">
+        <strong>{{ label(event.eventType) }}</strong>
+        <span class="loc mono">{{ event.locationUnLocode }}</span>
+        <span class="current" *ngIf="isLatest(i)">Latest</span>
+      </div>
+      <time class="when" [attr.datetime]="event.occurredAt">{{ event.occurredAt | date: 'dd MMM yyyy, HH:mm' }}</time>
+      <span class="booking mono" *ngIf="event.bookingNumber">{{ event.bookingNumber }}</span>
+      <p class="remarks" *ngIf="event.remarks">{{ event.remarks }}</p>
+    </div>
+  </li>
+</ol>

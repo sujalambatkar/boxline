@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 (foundation), 1 (reference data and container master) and 2 (auth and bookings) are complete; see the roadmap below.
+> Work in progress. Phases 0 to 3 are complete (foundation, container master, auth and bookings, movements and live chat); see the roadmap below.
 
 ## Stack
 
@@ -68,6 +68,27 @@ first run. New shippers can self-register (`POST /api/auth/register`); Ops accou
   application lock, so parallel requests never clash.
 - Edits carry a row version; saving over someone else's change returns 409 instead of overwriting it.
 
+## Container movements and tracking
+
+Ops record the events of a container's life; they must follow the cycle and can never go back in time:
+
+`GateOutEmpty -> Stuffed -> GateInFull -> LoadedOnVessel -> Discharged -> GateOutFull -> DeliveredToConsignee -> EmptyReturned`
+
+then a new cycle starts with `GateOutEmpty`. An out-of-order event is a 409, a backdated or future event
+a 400. An event may be linked to a **confirmed** booking. Recording is atomic per container (an
+application lock), so two operators cannot both append "the next" event.
+
+Tracking works by container number or booking number (`/tracking?q=...`). A shipper sees only the
+events linked to their own bookings; anything else looks exactly like a container that does not exist.
+A container that has history cannot be deleted.
+
+## Live chat
+
+Each booking has a conversation between its shipper and Ops over SignalR (`/hubs/chat`). The JWT is sent
+as a query value because browsers cannot set headers on a WebSocket. A connection receives a booking's
+messages only after joining its group, joining and sending both re-check access, and messages are stored
+(`GET /api/bookings/{id}/messages`). The Angular panel reloads history and rejoins after a reconnect.
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -87,7 +108,7 @@ scripts/test.sh       # .NET + Angular tests
 0. Foundation (done)
 1. Reference data and container master, ISO 6346 (done)
 2. Auth and bookings (done)
-3. Container movements, tracking and live chat
+3. Container movements, tracking and live chat (done)
 4. Vessels and voyages
 5. Tariffs and detention/demurrage calculator
 6. Documents (Bill of Lading PDF, exports)

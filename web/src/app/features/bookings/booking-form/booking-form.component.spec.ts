@@ -1,4 +1,5 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { Component, Input } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -10,6 +11,12 @@ import { Booking } from '../../../core/models/booking.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { SharedModule } from '../../../shared/shared.module';
 import { BookingFormComponent } from './booking-form.component';
+
+/** Stands in for the real chat panel so these tests never open a connection. */
+@Component({ selector: 'app-chat-panel', template: '' })
+class ChatPanelStubComponent {
+  @Input() bookingId!: number;
+}
 
 describe('BookingFormComponent', () => {
   const ports = [
@@ -49,7 +56,7 @@ describe('BookingFormComponent', () => {
   /** Creates the component for a new booking (no id) or an existing one, answering the three loading calls. */
   function create(id: string | null = null, loaded?: Booking): void {
     TestBed.configureTestingModule({
-      declarations: [BookingFormComponent],
+      declarations: [BookingFormComponent, ChatPanelStubComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
       providers: [
         { provide: AuthService, useValue: { hasRole: () => false } },
@@ -80,6 +87,10 @@ describe('BookingFormComponent', () => {
 
   describe('new booking', () => {
     beforeEach(() => create());
+
+    it('has no conversation until the booking exists', () => {
+      expect(fixture.nativeElement.querySelector('app-chat-panel')).toBeNull();
+    });
 
     it('starts with one empty container line and is not yet valid', () => {
       expect(component.lines.length).toBe(1);
@@ -195,6 +206,13 @@ describe('BookingFormComponent', () => {
       expect(component.canCancel).toBeFalse();
     });
 
+    it('shows the conversation for the booking and links to its tracking', () => {
+      const panel = fixture.nativeElement.querySelector('app-chat-panel');
+      expect(panel).not.toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Track this booking');
+      expect(fixture.nativeElement.querySelector('a[href*="/tracking"]')?.getAttribute('href')).toContain('BL-202611-0005');
+    });
+
     it('sends the row version with a save and adopts the new one', () => {
       component.form.patchValue({ cargoDescription: 'Cotton, rolled' });
       component.form.markAsDirty();
@@ -272,7 +290,7 @@ describe('BookingFormComponent', () => {
 
   it('goes back to the list when the booking does not exist', () => {
     TestBed.configureTestingModule({
-      declarations: [BookingFormComponent],
+      declarations: [BookingFormComponent, ChatPanelStubComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
       providers: [
         { provide: AuthService, useValue: { hasRole: () => false } },
