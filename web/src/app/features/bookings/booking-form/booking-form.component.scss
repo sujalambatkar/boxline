@@ -1,0 +1,116 @@
+.back {
+  margin-left: -8px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  h1 {
+    margin: 8px 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+}
+
+.meta {
+  margin: 0 0 16px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.notice {
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: #eeeeee;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 4px;
+
+  &.conflict {
+    background: #fff3e0;
+  }
+
+  &.error {
+    background: #ffebee;
+    color: #b00020;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  mat-form-field {
+    flex: 1 1 260px;
+  }
+}
+
+.full {
+  width: 100%;
+}
+
+.section {
+  margin: 8px 0;
+  font-size: 18px;
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  .type {
+    flex: 1 1 300px;
+  }
+
+  .qty {
+    width: 140px;
+  }
+}
+
+.field-error {
+  margin: 0 0 12px;
+  color: #b00020;
+  font-size: 13px;
+}
+
+.line-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 8px 0 24px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: #e0e0e0;
+
+  &[data-status='Confirmed'] {
+    background: #c8e6c9;
+  }
+
+  &[data-status='Cancelled'] {
+    background: #ffcdd2;
+  }
+}

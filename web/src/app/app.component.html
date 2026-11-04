@@ -2,16 +2,25 @@
   <mat-icon class="logo">sailing</mat-icon>
   <span class="title">BoxLine</span>
   <span class="spacer"></span>
+
   <span *ngIf="{ online: apiOnline$ | async } as api" class="status" [class.online]="api.online" aria-live="polite">
     <mat-icon inline>{{ api.online ? 'check_circle' : 'error' }}</mat-icon>
     API {{ api.online ? 'online' : 'offline' }}
   </span>
+
+  <ng-container *ngIf="user$ | async as user">
+    <span class="user" data-testid="user">{{ user.shipperCompany || user.email }} · {{ user.role }}</span>
+    <button mat-button (click)="logout()">
+      <mat-icon>logout</mat-icon>
+      Sign out
+    </button>
+  </ng-container>
 </mat-toolbar>
 
 <mat-sidenav-container class="container">
-  <mat-sidenav mode="side" opened class="sidenav">
+  <mat-sidenav mode="side" [opened]="!!(user$ | async)" class="sidenav">
     <mat-nav-list>
-      <a mat-list-item *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="active">
+      <a mat-list-item *ngFor="let item of navItems$ | async" [routerLink]="item.path" routerLinkActive="active">
         <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
         <span matListItemTitle>{{ item.label }}</span>
       </a>

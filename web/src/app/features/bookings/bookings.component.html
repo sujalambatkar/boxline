@@ -1,2 +1,106 @@
-<h1>Bookings</h1>
-<p>Create, confirm and track container bookings.</p>
+<div class="header">
+  <h1>Bookings</h1>
+  <a mat-flat-button color="primary" routerLink="/bookings/new" *ngIf="canCreate">
+    <mat-icon>add</mat-icon>
+    New booking
+  </a>
+</div>
+
+<div class="filters">
+  <mat-form-field appearance="outline" class="search">
+    <mat-label>Search number or cargo</mat-label>
+    <input matInput [formControl]="search" placeholder="e.g. BL-202611 or cotton" autocomplete="off" />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [formControl]="statusFilter">
+      <mat-option value="">All statuses</mat-option>
+      <mat-option *ngFor="let status of statuses" [value]="status">{{ statusLabels[status] }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Port of loading</mat-label>
+    <mat-select [formControl]="polFilter">
+      <mat-option [value]="null">Any</mat-option>
+      <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Port of discharge</mat-label>
+    <mat-select [formControl]="podFilter">
+      <mat-option [value]="null">Any</mat-option>
+      <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="date">
+    <mat-label>Created from</mat-label>
+    <input matInput type="date" [formControl]="fromFilter" [max]="toFilter.value || null" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="date">
+    <mat-label>Created to</mat-label>
+    <input matInput type="date" [formControl]="toFilter" [min]="fromFilter.value || null" />
+  </mat-form-field>
+
+  <button mat-button *ngIf="hasFilters" (click)="clearFilters()">Clear filters</button>
+</div>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<div class="table-wrapper mat-elevation-z1">
+  <table mat-table [dataSource]="bookings" [trackBy]="trackById">
+    <ng-container matColumnDef="number">
+      <th mat-header-cell *matHeaderCellDef>Booking no.</th>
+      <td mat-cell *matCellDef="let row" class="mono">{{ row.bookingNumber }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="shipper">
+      <th mat-header-cell *matHeaderCellDef>Shipper</th>
+      <td mat-cell *matCellDef="let row">{{ row.shipperName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="route">
+      <th mat-header-cell *matHeaderCellDef>Route</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="mono">{{ row.pol.unLocode }}</span>
+        <mat-icon class="arrow" inline>arrow_forward</mat-icon>
+        <span class="mono">{{ row.pod.unLocode }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="containers">
+      <th mat-header-cell *matHeaderCellDef>Containers</th>
+      <td mat-cell *matCellDef="let row">{{ row.totalContainers }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="chip" [attr.data-status]="row.status">{{ statusLabel(row) }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="created">
+      <th mat-header-cell *matHeaderCellDef>Created</th>
+      <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'dd MMM yyyy, HH:mm' }}</td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns" class="row" tabindex="0" (click)="open(row)"
+      (keydown.enter)="open(row)"></tr>
+
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell empty" [attr.colspan]="columns.length">
+        {{ loading ? 'Loading…' : hasFilters ? 'No bookings match your filters.' : 'No bookings yet.' }}
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [length]="totalCount" [pageIndex]="pageIndex" [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions" showFirstLastButtons (page)="onPage($event)"></mat-paginator>
+</div>

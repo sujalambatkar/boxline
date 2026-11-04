@@ -5,6 +5,8 @@ export interface ConfirmDialogData {
   title: string;
   message: string;
   confirmLabel?: string;
+  /** Styles the confirm button as a warning (default). Pass false for a positive action. */
+  destructive?: boolean;
 }
 
 @Component({
@@ -14,7 +16,7 @@ export interface ConfirmDialogData {
     <mat-dialog-content>{{ data.message }}</mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button [mat-dialog-close]="false">Cancel</button>
-      <button mat-flat-button color="warn" [mat-dialog-close]="true" cdkFocusInitial>
+      <button mat-flat-button [color]="data.destructive === false ? 'primary' : 'warn'" [mat-dialog-close]="true" cdkFocusInitial>
         {{ data.confirmLabel ?? 'Confirm' }}
       </button>
     </mat-dialog-actions>

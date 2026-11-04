@@ -1,0 +1,116 @@
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<ng-container *ngIf="!loading">
+  <a mat-button routerLink="/bookings" class="back"><mat-icon>arrow_back</mat-icon> All bookings</a>
+
+  <div class="header">
+    <h1>{{ booking ? booking.bookingNumber : 'New booking' }}</h1>
+    <span *ngIf="booking" class="chip" [attr.data-status]="booking.status">{{ statusLabels[booking.status] }}</span>
+  </div>
+
+  <p class="meta" *ngIf="booking">
+    <span *ngIf="isOps">Shipper: <strong>{{ booking.shipperName }}</strong> · </span>
+    Created {{ booking.createdAt | date: 'dd MMM yyyy, HH:mm' }} · Updated {{ booking.updatedAt | date: 'dd MMM yyyy, HH:mm' }}
+  </p>
+
+  <p class="notice" *ngIf="booking && !canEdit" role="status">
+    This booking is {{ statusLabels[booking.status] | lowercase }} and can no longer be edited.
+  </p>
+
+  <div class="banner conflict" *ngIf="conflictMessage" role="alert">
+    <span>{{ conflictMessage }}</span>
+    <button mat-button type="button" (click)="reload()" *ngIf="booking">Reload</button>
+  </div>
+
+  <div class="banner error" *ngIf="serverErrors.length" role="alert">
+    <ul>
+      <li *ngFor="let message of serverErrors">{{ message }}</li>
+    </ul>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Port of loading</mat-label>
+        <mat-select formControlName="polId">
+          <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+        </mat-select>
+        <mat-error>Select the port of loading.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Port of discharge</mat-label>
+        <mat-select formControlName="podId">
+          <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+        </mat-select>
+        <mat-error>Select the port of discharge.</mat-error>
+      </mat-form-field>
+    </div>
+    <p class="field-error" *ngIf="form.hasError('samePorts')" role="alert">
+      The port of discharge must differ from the port of loading.
+    </p>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Cargo description</mat-label>
+      <textarea matInput formControlName="cargoDescription" rows="3" [maxlength]="maxCargoLength"></textarea>
+      <mat-hint align="end">{{ form.controls.cargoDescription.value.length }} / {{ maxCargoLength }}</mat-hint>
+      <mat-error *ngIf="form.controls.cargoDescription.hasError('required')">Cargo description is required.</mat-error>
+    </mat-form-field>
+
+    <h2 class="section">Containers</h2>
+
+    <div formArrayName="lines" class="lines">
+      <div class="line" *ngFor="let line of lines.controls; let i = index" [formGroupName]="i">
+        <mat-form-field appearance="outline" class="type">
+          <mat-label>Container type</mat-label>
+          <mat-select formControlName="containerTypeId">
+            <mat-option *ngFor="let type of types" [value]="type.id">{{ typeLabel(type) }}</mat-option>
+          </mat-select>
+          <mat-error>Select a container type.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="qty">
+          <mat-label>Quantity</mat-label>
+          <input matInput type="number" formControlName="quantity" min="1" [max]="maxQuantity" />
+          <mat-error *ngIf="line.controls.quantity.hasError('required')">Enter a quantity.</mat-error>
+          <mat-error *ngIf="line.controls.quantity.hasError('min') || line.controls.quantity.hasError('max')">
+            Between 1 and {{ maxQuantity }}.
+          </mat-error>
+          <mat-error *ngIf="line.controls.quantity.hasError('pattern')">Whole numbers only.</mat-error>
+        </mat-form-field>
+
+        <button mat-icon-button type="button" aria-label="Remove line" matTooltip="Remove line"
+          (click)="removeLine(i)" *ngIf="canEdit">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <p class="field-error" *ngIf="lines.hasError('noLines') && (lines.touched || form.touched)" role="alert">
+      Add at least one container line.
+    </p>
+    <p class="field-error" *ngIf="lines.hasError('duplicateTypes')" role="alert">
+      Each container type can appear only once. Combine the quantities into one line.
+    </p>
+
+    <div class="line-actions">
+      <button mat-stroked-button type="button" (click)="addLine()" *ngIf="canEdit">
+        <mat-icon>add</mat-icon> Add container line
+      </button>
+      <span class="total">Total containers: <strong>{{ totalContainers }}</strong></span>
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" type="submit" *ngIf="canEdit" [disabled]="saving">
+        {{ saving ? 'Saving…' : isNew ? 'Create draft' : 'Save changes' }}
+      </button>
+      <button mat-stroked-button color="primary" type="button" *ngIf="canConfirm" (click)="confirm()"
+        [disabled]="form.dirty" [matTooltip]="form.dirty ? 'Save your changes before confirming' : ''">
+        Confirm booking
+      </button>
+      <button mat-stroked-button color="warn" type="button" *ngIf="canCancel" (click)="cancelBooking()">
+        Cancel booking
+      </button>
+    </div>
+  </form>
+</ng-container>

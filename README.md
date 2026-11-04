@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 (foundation) and 1 (reference data and container master) are complete; see the roadmap below.
+> Work in progress. Phases 0 (foundation), 1 (reference data and container master) and 2 (auth and bookings) are complete; see the roadmap below.
 
 ## Stack
 
@@ -45,6 +45,29 @@ dotnet user-secrets set "Jwt:Secret" "<random string, at least 32 characters>"
 In Development the API applies migrations and seeds 7 ports, 6 container types and 200 sample
 containers (all with valid ISO 6346 check digits) on startup. It only seeds empty tables.
 
+## Accounts and roles
+
+On the first API start in Development, two accounts are created and their generated passwords are
+printed to the console **once**: `ops@boxline.test` (Ops) and `shipper@boxline.test` (Shipper). To choose
+the passwords yourself, set `Seed:OpsPassword` and `Seed:ShipperPassword` in user-secrets before that
+first run. New shippers can self-register (`POST /api/auth/register`); Ops accounts cannot.
+
+| | Shipper | Ops |
+|---|---|---|
+| Ports, container types | read | read and manage |
+| Container master | no access | read and manage |
+| Bookings | create, edit drafts, confirm, cancel, **own only** | everything |
+
+## Booking rules
+
+- Status workflow: `Draft -> Confirmed -> Cancelled`. A draft is confirmed (not cancelled directly), and
+  only a confirmed booking can be cancelled. Defined in one table in `BookingWorkflow`.
+- Only drafts can be edited. Port of discharge must differ from port of loading; at least one container
+  line; quantity 1 to 50 per line; one line per container type.
+- Booking numbers look like `BL-202611-0001` (month plus sequence). Allocation is serialised with a SQL
+  application lock, so parallel requests never clash.
+- Edits carry a row version; saving over someone else's change returns 409 instead of overwriting it.
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -63,7 +86,7 @@ scripts/test.sh       # .NET + Angular tests
 
 0. Foundation (done)
 1. Reference data and container master, ISO 6346 (done)
-2. Auth and bookings
+2. Auth and bookings (done)
 3. Container movements, tracking and live chat
 4. Vessels and voyages
 5. Tariffs and detention/demurrage calculator
