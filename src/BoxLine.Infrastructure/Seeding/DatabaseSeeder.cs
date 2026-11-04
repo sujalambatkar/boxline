@@ -44,6 +44,7 @@ public sealed class DatabaseSeeder(BoxLineDbContext db)
         await SeedContainerTypesAsync(cancellationToken);
         await SeedContainersAsync(cancellationToken);
         await SeedVoyagesAsync(cancellationToken);
+        await SeedTariffsAsync(cancellationToken);
     }
 
     private async Task SeedPortsAsync(CancellationToken cancellationToken)
@@ -77,6 +78,46 @@ public sealed class DatabaseSeeder(BoxLineDbContext db)
 
         var typeIds = await db.ContainerTypes.OrderBy(t => t.Id).Select(t => t.Id).ToListAsync(cancellationToken);
         db.Containers.AddRange(GenerateContainers(typeIds, SampleContainerCount));
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>A starter detention tariff per container type: free days, then three steps of rising daily rates.</summary>
+    private async Task SeedTariffsAsync(CancellationToken cancellationToken)
+    {
+        if (await db.DetentionTariffs.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        // code -> (free days, rate for days after the free period: first step, second step, third step)
+        var plan = new Dictionary<string, (int Free, decimal[] Rates)>
+        {
+            ["20GP"] = (5, [30m, 60m, 90m]),
+            ["40GP"] = (5, [40m, 80m, 120m]),
+            ["40HC"] = (5, [40m, 80m, 120m]),
+            ["20OT"] = (5, [35m, 70m, 105m]),
+            ["20RF"] = (4, [55m, 110m, 165m]),
+            ["40RF"] = (4, [75m, 150m, 225m]),
+        };
+
+        var types = await db.ContainerTypes.ToListAsync(cancellationToken);
+        foreach (var type in types.Where(t => plan.ContainsKey(t.Code)))
+        {
+            var (free, rates) = plan[type.Code];
+            db.DetentionTariffs.Add(new DetentionTariff
+            {
+                ContainerTypeId = type.Id,
+                FreeDays = free,
+                ValidFrom = new DateOnly(2026, 1, 1),
+                Slabs =
+                [
+                    new() { FromDay = free + 1, ToDay = free + 5, RatePerDayUsd = rates[0] },
+                    new() { FromDay = free + 6, ToDay = free + 10, RatePerDayUsd = rates[1] },
+                    new() { FromDay = free + 11, ToDay = null, RatePerDayUsd = rates[2] },
+                ],
+            });
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 

@@ -34,15 +34,16 @@ public class ReferenceDataEndpointTests(BoxLineApiFactory factory) : IAsyncLifet
     [Fact]
     public async Task Ports_CreateUpdateDeleteRoundTrip_NormalizesTheCode()
     {
-        var code = $"ZZ{Guid.NewGuid().ToString("N")[..3].ToUpperInvariant().Replace('0', '2').Replace('1', '3')}";
+        // "QQ" keeps this test clear of the "ZZ" ports other tests create and leave behind.
+        var code = $"QQ{Guid.NewGuid().ToString("N")[..3].ToUpperInvariant().Replace('0', '2').Replace('1', '3')}";
 
-        var create = await client.PostAsJsonAsync("/api/ports", new PortRequest(code.ToLowerInvariant(), "Test Port", "zz"));
+        var create = await client.PostAsJsonAsync("/api/ports", new PortRequest(code.ToLowerInvariant(), "Test Port", "qq"));
         create.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = (await create.Content.ReadFromJsonAsync<PortResponse>())!;
         created.UnLocode.Should().Be(code);
-        created.Country.Should().Be("ZZ");
+        created.Country.Should().Be("QQ");
 
-        var update = await client.PutAsJsonAsync($"/api/ports/{created.Id}", new PortRequest(code, "Renamed Port", "ZZ"));
+        var update = await client.PutAsJsonAsync($"/api/ports/{created.Id}", new PortRequest(code, "Renamed Port", "QQ"));
         update.StatusCode.Should().Be(HttpStatusCode.OK);
         (await update.Content.ReadFromJsonAsync<PortResponse>())!.Name.Should().Be("Renamed Port");
 

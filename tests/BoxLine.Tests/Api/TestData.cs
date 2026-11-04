@@ -15,13 +15,13 @@ public static class TestData
     public static readonly MovementEventType[] Cycle = Enum.GetValues<MovementEventType>();
 
     /// <summary>Registers a new container under a prefix the seeder never uses and returns its number.</summary>
-    public static async Task<string> NewContainerAsync(HttpClient ops)
+    public static async Task<string> NewContainerAsync(HttpClient ops, int? typeId = null)
     {
         var types = (await ops.GetFromJsonAsync<List<ContainerTypeResponse>>("/api/container-types"))!;
         var body = $"TSTU{Random.Shared.Next(0, 1_000_000):D6}";
         var number = body + Iso6346Validator.ComputeCheckDigit(body);
 
-        var response = await ops.PostAsJsonAsync("/api/containers", new CreateContainerRequest(number, types[0].Id, OwnershipType.Owned));
+        var response = await ops.PostAsJsonAsync("/api/containers", new CreateContainerRequest(number, typeId ?? types[0].Id, OwnershipType.Owned));
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         return number;
     }
@@ -166,5 +166,47 @@ public static class TestData
         var confirmed = await shipper.Client.PostAsync($"/api/bookings/{booking.Id}/confirm", null);
         confirmed.EnsureSuccessStatusCode();
         return (await confirmed.Content.ReadFromJsonAsync<BookingResponse>(TestJson.Options))!;
+    }
+
+    /// <summary>A container type no seeded tariff exists for, so a test controls its tariffs completely.</summary>
+    public static async Task<ContainerTypeResponse> NewContainerTypeAsync(HttpClient ops)
+    {
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            var code = $"{Random.Shared.Next(20, 99)}{(char)('A' + Random.Shared.Next(26))}{(char)('A' + Random.Shared.Next(26))}";
+            var response = await ops.PostAsJsonAsync("/api/container-types", new ContainerTypeRequest(code, 40, $"Test type {code}"));
+            if (response.StatusCode == HttpStatusCode.Created)
+            {
+                return (await response.Content.ReadFromJsonAsync<ContainerTypeResponse>())!;
+            }
+        }
+
+        throw new InvalidOperationException("Could not create a unique test container type.");
+    }
+
+    public static readonly SlabRequest[] StandardSlabs = [new(6, 10, 40m), new(11, 15, 80m), new(16, null, 120m)];
+
+    /// <summary>Creates a tariff (5 free days and 40/80/120 slabs unless told otherwise), valid from 2020-01-01 with no end.</summary>
+    public static async Task<TariffResponse> NewTariffAsync(
+        HttpClient ops, int containerTypeId, int freeDays = 5, IReadOnlyList<SlabRequest>? slabs = null,
+        DateOnly? validFrom = null, DateOnly? validTo = null)
+    {
+        var request = new TariffRequest(containerTypeId, freeDays, validFrom ?? new DateOnly(2020, 1, 1), validTo, (slabs ?? StandardSlabs).ToList());
+        var response = await ops.PostAsJsonAsync("/api/tariffs", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+        return (await response.Content.ReadFromJsonAsync<TariffResponse>(TestJson.Options))!;
+    }
+
+    /// <summary>The price of a period worked out with arithmetic rather than by walking the days (an independent check).</summary>
+    public static decimal ExpectedAmount(DateOnly from, DateOnly to, int freeDays, IEnumerable<SlabRequest> slabs, bool weekends)
+    {
+        var counted = Enumerable.Range(0, to.DayNumber - from.DayNumber + 1)
+            .Count(i => weekends || from.AddDays(i).DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday));
+
+        return slabs.Sum(slab =>
+        {
+            var top = slab.ToDay is { } end ? Math.Min(counted, end) : counted;
+            return Math.Max(0, top - Math.Max(slab.FromDay, freeDays + 1) + 1) * slab.RatePerDayUsd;
+        });
     }
 }

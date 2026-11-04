@@ -28,6 +28,10 @@ public class BoxLineDbContext(DbContextOptions<BoxLineDbContext> options) : DbCo
 
     public DbSet<VoyageCall> VoyageCalls => Set<VoyageCall>();
 
+    public DbSet<DetentionTariff> DetentionTariffs => Set<DetentionTariff>();
+
+    public DbSet<DetentionSlab> DetentionSlabs => Set<DetentionSlab>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BoxLineDbContext).Assembly);

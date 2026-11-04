@@ -264,6 +264,70 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.ToTable("ContainerTypes");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.DetentionSlab", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FromDay")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RatePerDayUsd")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("TariffId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ToDay")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TariffId", "FromDay")
+                        .IsUnique();
+
+                    b.ToTable("DetentionSlabs", t =>
+                        {
+                            t.HasCheckConstraint("CK_DetentionSlabs_Days", "[FromDay] >= 1 AND ([ToDay] IS NULL OR [ToDay] >= [FromDay])");
+
+                            t.HasCheckConstraint("CK_DetentionSlabs_Rate", "[RatePerDayUsd] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.DetentionTariff", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContainerTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FreeDays")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("ValidFrom")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ValidTo")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContainerTypeId", "ValidFrom");
+
+                    b.ToTable("DetentionTariffs", t =>
+                        {
+                            t.HasCheckConstraint("CK_DetentionTariffs_FreeDays", "[FreeDays] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Port", b =>
                 {
                     b.Property<int>("Id")
@@ -544,6 +608,26 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.Navigation("Container");
                 });
 
+            modelBuilder.Entity("BoxLine.Core.Entities.DetentionSlab", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.DetentionTariff", null)
+                        .WithMany("Slabs")
+                        .HasForeignKey("TariffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.DetentionTariff", b =>
+                {
+                    b.HasOne("BoxLine.Core.Entities.ContainerType", "ContainerType")
+                        .WithMany()
+                        .HasForeignKey("ContainerTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ContainerType");
+                });
+
             modelBuilder.Entity("BoxLine.Core.Entities.Voyage", b =>
                 {
                     b.HasOne("BoxLine.Core.Entities.Vessel", "Vessel")
@@ -575,6 +659,11 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("BoxLine.Core.Entities.Booking", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("BoxLine.Core.Entities.DetentionTariff", b =>
+                {
+                    b.Navigation("Slabs");
                 });
 
             modelBuilder.Entity("BoxLine.Core.Entities.Voyage", b =>
