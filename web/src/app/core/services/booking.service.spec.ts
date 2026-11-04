@@ -57,6 +57,35 @@ describe('BookingService', () => {
     expect(requests.map(r => r.request.body)).toEqual([{ voyageId: 12 }, { voyageId: null }]);
   });
 
+  it('asks for the bill of lading as a file, keeping the response so the file name can be read', () => {
+    service.billOfLading(5).subscribe();
+
+    const call = http.expectOne(r => r.method === 'GET' && r.url.endsWith('/bookings/5/bill-of-lading'));
+    expect(call.request.responseType).toBe('blob');
+    call.flush(new Blob(['%PDF-']));
+  });
+
+  it('exports with the current filters but no paging, in the chosen format', () => {
+    service
+      .export({ search: ' cotton ', status: 'Confirmed', polId: 1, podId: 2, createdFrom: '2026-11-01', createdTo: '2026-11-30', page: 3, pageSize: 50 }, 'xlsx')
+      .subscribe();
+
+    const call = http.expectOne(r => r.url.endsWith('/bookings/export'));
+    expect(call.request.responseType).toBe('blob');
+    expect(call.request.params.keys().sort()).toEqual(['createdFrom', 'createdTo', 'format', 'podId', 'polId', 'search', 'status']);
+    expect(call.request.params.get('format')).toBe('xlsx');
+    expect(call.request.params.get('search')).toBe('cotton');
+    call.flush(new Blob(['PK']));
+  });
+
+  it('exports with only the format when nothing is filtered', () => {
+    service.export(empty, 'csv').subscribe();
+
+    const call = http.expectOne(r => r.url.endsWith('/bookings/export'));
+    expect(call.request.params.keys()).toEqual(['format']);
+    call.flush(new Blob(['x']));
+  });
+
   it('posts confirm and cancel without a body', () => {
     service.confirm(5).subscribe();
     service.cancel(5).subscribe();

@@ -127,6 +127,11 @@
       <button mat-stroked-button color="warn" type="button" *ngIf="canCancel" (click)="cancelBooking()">
         Cancel booking
       </button>
+      <button mat-stroked-button type="button" *ngIf="canDownloadBillOfLading" (click)="downloadBillOfLading()" [disabled]="downloading"
+        data-testid="download-bol">
+        <mat-icon>picture_as_pdf</mat-icon>
+        {{ downloading ? 'Preparing…' : billOfLadingLabel }}
+      </button>
     </div>
   </form>
 

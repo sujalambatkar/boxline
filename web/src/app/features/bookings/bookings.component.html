@@ -1,10 +1,22 @@
 <div class="header">
   <h1>Bookings</h1>
-  <a mat-flat-button color="primary" routerLink="/bookings/new" *ngIf="canCreate">
-    <mat-icon>add</mat-icon>
-    New booking
-  </a>
+  <div class="header-actions">
+    <button mat-stroked-button [matMenuTriggerFor]="exportMenu" [disabled]="exporting" data-testid="export">
+      <mat-icon>download</mat-icon>
+      {{ exporting ? 'Preparing…' : 'Export' }}
+    </button>
+    <mat-menu #exportMenu="matMenu">
+      <button mat-menu-item (click)="export('csv')">CSV (.csv)</button>
+      <button mat-menu-item (click)="export('xlsx')">Excel (.xlsx)</button>
+    </mat-menu>
+
+    <a mat-flat-button color="primary" routerLink="/bookings/new" *ngIf="canCreate">
+      <mat-icon>add</mat-icon>
+      New booking
+    </a>
+  </div>
 </div>
+<p class="export-note" *ngIf="hasFilters">The export includes every booking that matches your filters, not only this page.</p>
 
 <div class="filters">
   <mat-form-field appearance="outline" class="search">

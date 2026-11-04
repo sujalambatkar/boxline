@@ -9,6 +9,7 @@ import { of } from 'rxjs';
 
 import { Booking } from '../../../core/models/booking.models';
 import { AuthService } from '../../../core/services/auth.service';
+import { FileDownloadService } from '../../../core/services/file-download.service';
 import { SharedModule } from '../../../shared/shared.module';
 import { BookingFormComponent } from './booking-form.component';
 
@@ -53,6 +54,7 @@ describe('BookingFormComponent', () => {
     allowedTransitions: ['Confirmed'],
     createdAt: '2026-11-04T09:30:00Z',
     updatedAt: '2026-11-04T09:30:00Z',
+    confirmedAt: null,
     rowVersion: 'AAAA',
     totalContainers: 2,
     lines: [{ id: 1, containerTypeId: 10, containerTypeCode: '20GP', quantity: 2 }],
@@ -64,6 +66,7 @@ describe('BookingFormComponent', () => {
   let http: HttpTestingController;
   let router: Router;
   let dialogAnswer: boolean;
+  let files: { save: jasmine.Spy; problemMessage: jasmine.Spy };
 
   /** Creates the component for a new booking (no id) or an existing one, answering the three loading calls. */
   function create(id: string | null = null, loaded?: Booking, ops = false): void {
@@ -71,6 +74,7 @@ describe('BookingFormComponent', () => {
       declarations: [BookingFormComponent, ChatPanelStubComponent, SailingSelectStubComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
       providers: [
+        { provide: FileDownloadService, useValue: files },
         { provide: AuthService, useValue: { hasRole: (...roles: string[]) => ops && roles.includes('Ops') } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } } },
       ],
@@ -94,7 +98,13 @@ describe('BookingFormComponent', () => {
     fixture.detectChanges();
   }
 
-  beforeEach(() => (dialogAnswer = true));
+  beforeEach(() => {
+    dialogAnswer = true;
+    files = {
+      save: jasmine.createSpy('save'),
+      problemMessage: jasmine.createSpy('problemMessage').and.callFake(async (_: unknown, fallback: string) => fallback),
+    };
+  });
   afterEach(() => http.verify());
 
   describe('new booking', () => {
@@ -314,6 +324,73 @@ describe('BookingFormComponent', () => {
 
       expect(component.booking?.status).toBe('Cancelled');
       expect(component.canCancel).toBeFalse();
+    });
+  });
+
+  describe('bill of lading', () => {
+    const button = () => fixture.nativeElement.querySelector('[data-testid="download-bol"]') as HTMLButtonElement | null;
+
+    it('is not offered for a booking that does not exist yet', () => {
+      create();
+
+      expect(button()).toBeNull();
+      expect(component.canDownloadBillOfLading).toBeFalse();
+    });
+
+    it('offers a draft preview for a draft', () => {
+      create('5');
+
+      expect(button()?.textContent).toContain('Download draft bill of lading');
+    });
+
+    it('offers the plain bill of lading for a confirmed booking', () => {
+      create('5', existing({ status: 'Confirmed', allowedTransitions: ['Cancelled'] }));
+
+      expect(button()?.textContent).toContain('Download bill of lading');
+      expect(button()?.textContent).not.toContain('draft');
+    });
+
+    it('is not offered for a cancelled booking', () => {
+      create('5', existing({ status: 'Cancelled', allowedTransitions: [] }));
+
+      expect(button()).toBeNull();
+    });
+
+    it('fetches the PDF and hands it to the file service, with the booking number as the fallback name', () => {
+      create('5');
+
+      component.downloadBillOfLading();
+      expect(component.downloading).toBeTrue();
+      const request = http.expectOne(r => r.method === 'GET' && r.url.endsWith('/bookings/5/bill-of-lading'));
+      expect(request.request.responseType).toBe('blob');
+      request.flush(new Blob(['%PDF-']), { headers: { 'Content-Disposition': 'attachment; filename="BL-202611-0005.pdf"' } });
+
+      expect(component.downloading).toBeFalse();
+      expect(files.save).toHaveBeenCalledTimes(1);
+      expect(files.save.calls.mostRecent().args[1]).toBe('BL-202611-0005.pdf');
+    });
+
+    it('ignores a second click while a download is under way', () => {
+      create('5');
+
+      component.downloadBillOfLading();
+      component.downloadBillOfLading();
+
+      expect(http.match(r => r.url.endsWith('/bill-of-lading'))).toHaveSize(1);
+    });
+
+    it('shows the server\'s reason when the document cannot be produced', async () => {
+      create('5');
+      files.problemMessage.and.resolveTo('Booking BL-202611-0005 is cancelled, so it has no bill of lading.');
+      const snack = spyOn((component as unknown as { snackBar: { open: (...args: unknown[]) => void } }).snackBar, 'open');
+
+      component.downloadBillOfLading();
+      http.expectOne(r => r.url.endsWith('/bill-of-lading')).flush(new Blob(['{}']), { status: 409, statusText: 'Conflict' });
+      await fixture.whenStable();
+
+      expect(component.downloading).toBeFalse();
+      expect(files.save).not.toHaveBeenCalled();
+      expect(snack).toHaveBeenCalledWith('Booking BL-202611-0005 is cancelled, so it has no bill of lading.', 'Dismiss', jasmine.anything());
     });
   });
 

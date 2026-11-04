@@ -18,6 +18,7 @@ import { ContainerType } from '../../../core/models/container.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { BookingService } from '../../../core/services/booking.service';
 import { ContainerTypeService } from '../../../core/services/container-type.service';
+import { FileDownloadService } from '../../../core/services/file-download.service';
 import { PortService } from '../../../core/services/port.service';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { differentPorts, minLines, uniqueContainerTypes } from '../../../shared/validators/booking.validators';
@@ -58,6 +59,7 @@ export class BookingFormComponent implements OnInit {
   /** The sailing Ops have picked for a confirmed booking, not yet applied. */
   assignVoyageId: number | null = null;
   assigning = false;
+  downloading = false;
   /** Validation messages returned by the API for the last save. */
   serverErrors: string[] = [];
   /** Set when the API reports the booking changed underneath us. */
@@ -73,6 +75,7 @@ export class BookingFormComponent implements OnInit {
     private readonly bookingService: BookingService,
     private readonly portService: PortService,
     private readonly typeService: ContainerTypeService,
+    private readonly files: FileDownloadService,
   ) {}
 
   get lines(): FormArray<LineGroup> {
@@ -103,6 +106,15 @@ export class BookingFormComponent implements OnInit {
 
   get assignChanged(): boolean {
     return this.assignVoyageId !== (this.booking?.voyageId ?? null);
+  }
+
+  /** A cancelled booking has no bill of lading; a draft one is downloadable as a watermarked preview. */
+  get canDownloadBillOfLading(): boolean {
+    return !!this.booking && this.booking.status !== 'Cancelled';
+  }
+
+  get billOfLadingLabel(): string {
+    return this.booking?.status === 'Draft' ? 'Download draft bill of lading' : 'Download bill of lading';
   }
 
   get totalContainers(): number {
@@ -256,6 +268,26 @@ export class BookingFormComponent implements OnInit {
       id => this.bookingService.cancel(id),
       'cancelled',
     );
+  }
+
+  downloadBillOfLading(): void {
+    const current = this.booking;
+    if (!current || this.downloading) {
+      return;
+    }
+
+    this.downloading = true;
+    this.bookingService.billOfLading(current.id).subscribe({
+      next: response => {
+        this.downloading = false;
+        this.files.save(response, `${current.bookingNumber}.pdf`);
+      },
+      error: async (error: unknown) => {
+        this.downloading = false;
+        const message = await this.files.problemMessage(error, 'The bill of lading could not be generated.');
+        this.snackBar.open(message, 'Dismiss', { duration: 6000 });
+      },
+    });
   }
 
   /** Reloads the booking from the server, discarding local edits (used after a concurrency conflict). */

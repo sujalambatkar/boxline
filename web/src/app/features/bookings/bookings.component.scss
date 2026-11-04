@@ -9,6 +9,17 @@
   }
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.export-note {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;

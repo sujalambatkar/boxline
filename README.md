@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 to 5 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator); see the roadmap below.
+> Work in progress. Phases 0 to 6 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator, documents); see the roadmap below.
 
 ## Stack
 
@@ -132,6 +132,21 @@ breakdowns; `POST /api/detention/calculate` accepts `"engine": "Sql"` to run it 
 price only containers that travelled under their own bookings. Ops manage tariffs at `/tariffs`; everyone uses
 the calculator at `/detention`.
 
+## Documents and exports
+
+- **Bill of lading** (`GET /api/bookings/{id}/bill-of-lading`, PDF via QuestPDF Community). A confirmed booking
+  gets a clean document dated by the day it was confirmed (`Booking.ConfirmedAt`, which does not change on later
+  downloads); a draft gets a preview with a large DRAFT watermark and "Not issued"; a cancelled booking has none
+  (409). It prints only what the system holds: shipper, ports, vessel and voyage (or "To be advised"), cargo
+  description, the booked container types and quantities, and the container numbers recorded against the booking.
+  It states that it is a demonstration document, not a legal instrument. Shippers can only download their own.
+- **Bookings export** (`GET /api/bookings/export?format=csv|xlsx`). Takes the same filters as the list and exports
+  every matching booking, not just the current page, newest first; shippers only ever get their own bookings.
+  Capped at 10,000 rows. CSV is UTF-8 with a byte-order mark (so Excel reads accents) with RFC 4180 quoting, and
+  text that would run as a spreadsheet formula (starting with `=`, `+`, `-`, `@`) is prefixed with an apostrophe.
+  Excel exports use real date and number cells, a filter row and a frozen header.
+- In the app: a "Download bill of lading" button on the booking page and an Export menu on the bookings list.
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -154,6 +169,6 @@ scripts/test.sh       # .NET + Angular tests
 3. Container movements, tracking and live chat (done)
 4. Vessels and voyages (done)
 5. Tariffs and detention/demurrage calculator (done)
-6. Documents (Bill of Lading PDF, exports)
+6. Documents (Bill of Lading PDF, exports) (done)
 7. Performance demo
 8. Polish and documentation

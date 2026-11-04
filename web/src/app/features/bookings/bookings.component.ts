@@ -25,6 +25,7 @@ import {
 } from '../../core/models/booking.models';
 import { AuthService } from '../../core/services/auth.service';
 import { BookingService } from '../../core/services/booking.service';
+import { FileDownloadService } from '../../core/services/file-download.service';
 import { PortService } from '../../core/services/port.service';
 
 @Component({
@@ -53,6 +54,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
   ports: Port[] = [];
   totalCount = 0;
   loading = false;
+  exporting = false;
   pageIndex = 0;
   pageSize = 20;
 
@@ -65,6 +67,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
     private readonly auth: AuthService,
     private readonly router: Router,
     private readonly snackBar: MatSnackBar,
+    private readonly files: FileDownloadService,
   ) {}
 
   ngOnInit(): void {
@@ -139,6 +142,26 @@ export class BookingsComponent implements OnInit, OnDestroy {
       !!this.fromFilter.value ||
       !!this.toFilter.value
     );
+  }
+
+  /** Downloads every booking that matches the current filters (not just this page). */
+  export(format: 'csv' | 'xlsx'): void {
+    if (this.exporting) {
+      return;
+    }
+
+    this.exporting = true;
+    this.bookingService.export(this.currentQuery(), format).subscribe({
+      next: response => {
+        this.exporting = false;
+        this.files.save(response, `bookings.${format}`);
+      },
+      error: async (error: unknown) => {
+        this.exporting = false;
+        const message = await this.files.problemMessage(error, 'The export failed. Please try again.');
+        this.snackBar.open(message, 'Dismiss', { duration: 6000 });
+      },
+    });
   }
 
   statusLabel(booking: Booking): string {

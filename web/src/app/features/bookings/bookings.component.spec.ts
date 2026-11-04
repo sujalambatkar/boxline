@@ -8,6 +8,7 @@ import { UserRole } from '../../core/models/auth.models';
 import { Booking } from '../../core/models/booking.models';
 import { PagedResponse } from '../../core/models/container.models';
 import { AuthService } from '../../core/services/auth.service';
+import { FileDownloadService } from '../../core/services/file-download.service';
 import { SharedModule } from '../../shared/shared.module';
 import { BookingsComponent } from './bookings.component';
 
@@ -15,6 +16,7 @@ describe('BookingsComponent', () => {
   let fixture: ComponentFixture<BookingsComponent>;
   let component: BookingsComponent;
   let http: HttpTestingController;
+  let files: { save: jasmine.Spy; problemMessage: jasmine.Spy };
 
   const booking = (id: number, number: string): Booking => ({
     id,
@@ -30,6 +32,7 @@ describe('BookingsComponent', () => {
     allowedTransitions: ['Confirmed'],
     createdAt: '2026-11-04T09:30:00Z',
     updatedAt: '2026-11-04T09:30:00Z',
+    confirmedAt: null,
     rowVersion: 'AAAA',
     totalContainers: 3,
     lines: [],
@@ -41,11 +44,21 @@ describe('BookingsComponent', () => {
 
   const listRequest = (): TestRequest => http.expectOne(r => r.url.endsWith('/bookings') && r.method === 'GET');
 
+  beforeEach(() => {
+    files = {
+      save: jasmine.createSpy('save'),
+      problemMessage: jasmine.createSpy('problemMessage').and.callFake(async (_: unknown, fallback: string) => fallback),
+    };
+  });
+
   async function create(role: UserRole): Promise<void> {
     await TestBed.configureTestingModule({
       declarations: [BookingsComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
-      providers: [{ provide: AuthService, useValue: { hasRole: (...roles: UserRole[]) => roles.includes(role) } }],
+      providers: [
+        { provide: AuthService, useValue: { hasRole: (...roles: UserRole[]) => roles.includes(role) } },
+        { provide: FileDownloadService, useValue: files },
+      ],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
@@ -181,6 +194,72 @@ describe('BookingsComponent', () => {
     http.match(r => r.url.endsWith('/bookings')).forEach(r => !r.cancelled && r.flush(page([])));
 
     expect(component.hasFilters).toBeFalse();
+  });
+
+  describe('export', () => {
+    it('downloads every booking matching the current filters in the chosen format', async () => {
+      await create('Shipper');
+      listRequest().flush(page([]));
+      component.statusFilter.setValue('Confirmed');
+      http.match(r => r.url.endsWith('/bookings') && r.method === 'GET').filter(r => !r.cancelled).forEach(r => r.flush(page([])));
+      component.polFilter.setValue(1);
+      http.match(r => r.url.endsWith('/bookings') && r.method === 'GET').filter(r => !r.cancelled).forEach(r => r.flush(page([])));
+      component.pageIndex = 4;
+
+      component.export('xlsx');
+
+      const call = http.expectOne(r => r.url.endsWith('/bookings/export'));
+      expect(call.request.params.get('format')).toBe('xlsx');
+      expect(call.request.params.get('status')).toBe('Confirmed');
+      expect(call.request.params.get('polId')).toBe('1');
+      expect(call.request.params.has('page')).toBeFalse();
+      expect(call.request.params.has('pageSize')).toBeFalse();
+      call.flush(new Blob(['PK']), { headers: { 'Content-Disposition': 'attachment; filename="bookings-20261105-1430.xlsx"' } });
+
+      expect(files.save).toHaveBeenCalledTimes(1);
+      expect(files.save.calls.mostRecent().args[1]).toBe('bookings.xlsx');
+      expect(component.exporting).toBeFalse();
+    });
+
+    it('offers both formats in a menu and mentions that filters apply to the whole export', async () => {
+      await create('Shipper');
+      listRequest().flush(page([]));
+      component.statusFilter.setValue('Draft');
+      http.match(r => r.url.endsWith('/bookings') && r.method === 'GET').filter(r => !r.cancelled).forEach(r => r.flush(page([])));
+      fixture.detectChanges();
+
+      (fixture.nativeElement.querySelector('[data-testid="export"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const items = Array.from(document.querySelectorAll('.mat-mdc-menu-item')).map(i => i.textContent?.trim());
+      expect(items).toEqual(['CSV (.csv)', 'Excel (.xlsx)']);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('includes every booking that matches your filters');
+    });
+
+    it('ignores another click while an export is under way', async () => {
+      await create('Shipper');
+      listRequest().flush(page([]));
+
+      component.export('csv');
+      component.export('csv');
+
+      expect(http.match(r => r.url.endsWith('/bookings/export'))).toHaveSize(1);
+    });
+
+    it('explains why an export failed, such as too many rows', async () => {
+      await create('Shipper');
+      listRequest().flush(page([]));
+      files.problemMessage.and.resolveTo('More than 10,000 bookings match. Narrow the filters and try again.');
+      const snack = spyOn((component as unknown as { snackBar: { open: (...args: unknown[]) => void } }).snackBar, 'open');
+
+      component.export('csv');
+      http.expectOne(r => r.url.endsWith('/bookings/export')).flush(new Blob(['{}']), { status: 400, statusText: 'Bad Request' });
+      await fixture.whenStable();
+
+      expect(component.exporting).toBeFalse();
+      expect(files.save).not.toHaveBeenCalled();
+      expect(snack).toHaveBeenCalledWith('More than 10,000 bookings match. Narrow the filters and try again.', 'Dismiss', jasmine.anything());
+    });
   });
 
   it('opens a booking when its row is activated', async () => {

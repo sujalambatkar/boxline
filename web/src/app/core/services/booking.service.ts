@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -35,6 +35,35 @@ export class BookingService {
     }
 
     return this.http.get<PagedResponse<Booking>>(this.url, { params });
+  }
+
+  /** The bill of lading PDF (a draft one is watermarked). The response carries the file name in Content-Disposition. */
+  billOfLading(id: number): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.url}/${id}/bill-of-lading`, { observe: 'response', responseType: 'blob' });
+  }
+
+  /** Every booking matching the filters (not just the current page) as a CSV or Excel file. */
+  export(query: BookingListQuery, format: 'csv' | 'xlsx'): Observable<HttpResponse<Blob>> {
+    let params = new HttpParams().set('format', format);
+    if (query.search.trim()) {
+      params = params.set('search', query.search.trim());
+    }
+    if (query.status) {
+      params = params.set('status', query.status);
+    }
+    if (query.polId !== null) {
+      params = params.set('polId', query.polId);
+    }
+    if (query.podId !== null) {
+      params = params.set('podId', query.podId);
+    }
+    if (query.createdFrom) {
+      params = params.set('createdFrom', query.createdFrom);
+    }
+    if (query.createdTo) {
+      params = params.set('createdTo', query.createdTo);
+    }
+    return this.http.get(`${this.url}/export`, { params, observe: 'response', responseType: 'blob' });
   }
 
   get(id: number): Observable<Booking> {

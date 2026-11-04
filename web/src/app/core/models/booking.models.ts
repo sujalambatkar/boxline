@@ -52,6 +52,8 @@ export interface Booking {
   allowedTransitions: BookingStatus[];
   createdAt: string;
   updatedAt: string;
+  /** When the booking was confirmed (ISO 8601 UTC), or null. */
+  confirmedAt: string | null;
   /** Opaque concurrency token; send it back unchanged when updating. */
   rowVersion: string;
   totalContainers: number;
