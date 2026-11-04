@@ -1,17 +1,12 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
+import { SharedModule } from '../../shared/shared.module';
+import { VesselDialogComponent } from './vessel-dialog/vessel-dialog.component';
 import { VesselsRoutingModule } from './vessels-routing.module';
 import { VesselsComponent } from './vessels.component';
 
-
 @NgModule({
-  declarations: [
-    VesselsComponent
-  ],
-  imports: [
-    CommonModule,
-    VesselsRoutingModule
-  ]
+  declarations: [VesselsComponent, VesselDialogComponent],
+  imports: [SharedModule, VesselsRoutingModule],
 })
-export class VesselsModule { }
+export class VesselsModule {}

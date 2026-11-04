@@ -72,6 +72,7 @@ describe('AppComponent', () => {
       'view_in_arContainers',
       'location_searchingTracking',
       'directions_boatVessels',
+      'routeVoyages',
       'request_quoteTariffs',
     ]);
     expect(el().querySelector('[data-testid="user"]')?.textContent).toContain('ops@boxline.test · Ops');

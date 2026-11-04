@@ -1,0 +1,136 @@
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<ng-container *ngIf="!loading">
+  <a mat-button routerLink="/voyages" class="back"><mat-icon>arrow_back</mat-icon> All voyages</a>
+
+  <div class="header">
+    <h1>{{ voyage ? voyage.voyageNumber : 'New voyage' }}</h1>
+    <span *ngIf="voyage" class="chip" [attr.data-status]="voyage.status">{{ statusLabels[voyage.status] }}</span>
+  </div>
+  <p class="meta" *ngIf="voyage">{{ voyage.vessel.name }} · IMO {{ voyage.vessel.imoNumber }}</p>
+
+  <p class="notice" *ngIf="voyage && !canEdit" role="status">
+    This voyage is {{ statusLabels[voyage.status] | lowercase }}, so its rotation can no longer be edited.
+    <ng-container *ngIf="canRecordActuals"> Enter actual arrival and departure times below, in rotation order.</ng-container>
+  </p>
+
+  <div class="banner conflict" *ngIf="conflictMessage" role="alert">
+    <span>{{ conflictMessage }}</span>
+    <button mat-button type="button" (click)="reload()" *ngIf="voyage">Reload</button>
+  </div>
+
+  <div class="banner error" *ngIf="serverErrors.length" role="alert">
+    <ul><li *ngFor="let message of serverErrors">{{ message }}</li></ul>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Vessel</mat-label>
+        <mat-select formControlName="vesselId">
+          <mat-option *ngFor="let vessel of vessels" [value]="vessel.id">{{ vessel.name }} · IMO {{ vessel.imoNumber }}</mat-option>
+        </mat-select>
+        <mat-error>Select a vessel.</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Voyage number</mat-label>
+        <input matInput formControlName="voyageNumber" placeholder="BXL2612E" autocomplete="off" class="mono" maxlength="20" />
+        <mat-error>Enter a voyage number.</mat-error>
+      </mat-form-field>
+    </div>
+
+    <h2 class="section">Port rotation</h2>
+
+    <!-- Editable rotation (new or scheduled) -->
+    <div formArrayName="calls" *ngIf="canEdit" class="calls">
+      <div class="call" *ngFor="let call of calls.controls; let i = index" [formGroupName]="i">
+        <span class="seq" aria-hidden="true">{{ i + 1 }}</span>
+
+        <mat-form-field appearance="outline" class="port">
+          <mat-label>Port</mat-label>
+          <mat-select formControlName="portId">
+            <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+          </mat-select>
+          <mat-error>Select a port.</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="time">
+          <mat-label>ETA</mat-label>
+          <input matInput type="datetime-local" formControlName="eta" />
+          <mat-hint *ngIf="isFirst(i)">none at origin</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="time">
+          <mat-label>ETD</mat-label>
+          <input matInput type="datetime-local" formControlName="etd" />
+          <mat-hint *ngIf="isLast(i)">none at final port</mat-hint>
+        </mat-form-field>
+
+        <div class="move">
+          <button mat-icon-button type="button" aria-label="Move up" (click)="moveCall(i, -1)" [disabled]="i === 0">
+            <mat-icon>arrow_upward</mat-icon>
+          </button>
+          <button mat-icon-button type="button" aria-label="Move down" (click)="moveCall(i, 1)" [disabled]="i === calls.length - 1">
+            <mat-icon>arrow_downward</mat-icon>
+          </button>
+          <button mat-icon-button type="button" aria-label="Remove port call" (click)="removeCall(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ul class="field-error" *ngIf="canEdit && rotationProblems.length" role="alert">
+      <li *ngFor="let problem of rotationProblems">{{ problem }}</li>
+    </ul>
+
+    <div class="line-actions" *ngIf="canEdit">
+      <button mat-stroked-button type="button" (click)="addCall()"><mat-icon>add</mat-icon> Add port call</button>
+    </div>
+
+    <!-- Read-only rotation with actual times (underway, completed, cancelled) -->
+    <div class="table-wrapper" *ngIf="!canEdit && voyage">
+      <table class="rotation">
+        <thead>
+          <tr>
+            <th>#</th><th>Port</th><th>ETA</th><th>ETD</th><th>Actual arrival</th><th>Actual departure</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let call of voyage.calls; let i = index" [formGroup]="actuals.at(i)">
+            <td>{{ call.sequence }}</td>
+            <td><strong class="mono">{{ call.port.unLocode }}</strong> {{ call.port.name }}</td>
+            <td>{{ call.eta | date: 'dd MMM, HH:mm' }}</td>
+            <td>{{ call.etd | date: 'dd MMM, HH:mm' }}</td>
+            <ng-container *ngIf="canRecordActuals; else recorded">
+              <td><input type="datetime-local" class="plain" formControlName="ata" [max]="nowInput" [attr.aria-label]="'Actual arrival at ' + call.port.unLocode" /></td>
+              <td><input type="datetime-local" class="plain" formControlName="atd" [max]="nowInput" [attr.aria-label]="'Actual departure from ' + call.port.unLocode" /></td>
+              <td>
+                <button mat-stroked-button type="button" (click)="saveActuals(i)" [disabled]="savingActualsFor !== null">
+                  {{ savingActualsFor === i ? 'Saving…' : 'Save' }}
+                </button>
+              </td>
+            </ng-container>
+            <ng-template #recorded>
+              <td>{{ call.ata | date: 'dd MMM, HH:mm' }}</td>
+              <td>{{ call.atd | date: 'dd MMM, HH:mm' }}</td>
+              <td></td>
+            </ng-template>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" type="submit" *ngIf="canEdit" [disabled]="saving">
+        {{ saving ? 'Saving…' : isNew ? 'Create voyage' : 'Save changes' }}
+      </button>
+      <button mat-stroked-button color="primary" type="button" *ngIf="can('Underway')" (click)="changeStatus('Underway')" [disabled]="form.dirty"
+        [matTooltip]="form.dirty ? 'Save your changes first' : ''">Start voyage</button>
+      <button mat-stroked-button color="primary" type="button" *ngIf="can('Completed')" (click)="changeStatus('Completed')">Complete voyage</button>
+      <button mat-stroked-button color="warn" type="button" *ngIf="can('Cancelled')" (click)="changeStatus('Cancelled')">Cancel voyage</button>
+      <button mat-button color="warn" type="button" *ngIf="canDelete" (click)="remove()">Delete voyage</button>
+    </div>
+  </form>
+</ng-container>

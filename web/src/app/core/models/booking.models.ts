@@ -29,6 +29,15 @@ export interface BookingLine {
   quantity: number;
 }
 
+/** The sailing a booking is on: departure at its loading port, arrival at its discharge port. */
+export interface BookingVoyage {
+  id: number;
+  voyageNumber: string;
+  vesselName: string;
+  departure: string | null;
+  arrival: string | null;
+}
+
 export interface Booking {
   id: number;
   bookingNumber: string;
@@ -37,6 +46,7 @@ export interface Booking {
   pol: PortSummary;
   pod: PortSummary;
   voyageId: number | null;
+  voyage: BookingVoyage | null;
   cargoDescription: string;
   status: BookingStatus;
   allowedTransitions: BookingStatus[];
@@ -58,6 +68,8 @@ export interface SaveBookingRequest {
   podId: number;
   cargoDescription: string;
   lines: BookingLineRequest[];
+  /** The sailing to travel on. An update replaces the booking, so null removes the voyage. */
+  voyageId: number | null;
 }
 
 export interface BookingListQuery {

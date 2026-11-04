@@ -24,6 +24,7 @@ describe('BookingsComponent', () => {
     pol: { id: 1, unLocode: 'INNSA', name: 'Nhava Sheva' },
     pod: { id: 2, unLocode: 'AEJEA', name: 'Jebel Ali' },
     voyageId: null,
+    voyage: null,
     cargoDescription: 'Cotton',
     status: 'Draft',
     allowedTransitions: ['Confirmed'],
@@ -92,6 +93,16 @@ describe('BookingsComponent', () => {
     expect(text).not.toContain('New booking');
     expect(component.columns).toContain('shipper');
     expect(text).toContain('Acme Exports');
+  });
+
+  it('shows the voyage number, or a dash when there is no sailing yet', async () => {
+    await create('Shipper');
+    const withVoyage = { ...booking(1, 'BL-202611-0001'), voyageId: 9, voyage: { id: 9, voyageNumber: 'BXL2612E', vesselName: 'MV Aurora', departure: null, arrival: null } };
+    listRequest().flush(page([withVoyage, booking(2, 'BL-202611-0002')]));
+    fixture.detectChanges();
+
+    const cells = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tr.row')).map(r => r.querySelectorAll('td')[2].textContent?.trim());
+    expect(cells).toEqual(['BXL2612E', '—']);
   });
 
   it('hides the shipper column for shippers', async () => {

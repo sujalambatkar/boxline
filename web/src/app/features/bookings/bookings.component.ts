@@ -39,8 +39,8 @@ export class BookingsComponent implements OnInit, OnDestroy {
   readonly isOps = this.auth.hasRole('Ops');
   readonly canCreate = this.auth.hasRole('Shipper');
   readonly columns = this.isOps
-    ? ['number', 'shipper', 'route', 'containers', 'status', 'created']
-    : ['number', 'route', 'containers', 'status', 'created'];
+    ? ['number', 'shipper', 'route', 'voyage', 'containers', 'status', 'created']
+    : ['number', 'route', 'voyage', 'containers', 'status', 'created'];
 
   readonly search = new FormControl('', { nonNullable: true });
   readonly statusFilter = new FormControl<BookingStatus | ''>('', { nonNullable: true });

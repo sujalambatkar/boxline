@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 to 3 are complete (foundation, container master, auth and bookings, movements and live chat); see the roadmap below.
+> Work in progress. Phases 0 to 4 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages); see the roadmap below.
 
 ## Stack
 
@@ -89,6 +89,25 @@ as a query value because browsers cannot set headers on a WebSocket. A connectio
 messages only after joining its group, joining and sending both re-check access, and messages are stored
 (`GET /api/bookings/{id}/messages`). The Angular panel reloads history and rejoins after a reconnect.
 
+## Vessels, voyages and sailings
+
+- **IMO numbers** are seven digits; multiply the first six by 7, 6, 5, 4, 3, 2 and the last digit of the sum
+  must equal the seventh (for example 9074729). `IMO 9074-729` style input is accepted and normalized.
+- A **voyage** is one sailing of a vessel through a rotation of ports. The sequence must strictly increase, a
+  port can appear only once, the first call needs an ETD and the last an ETA (intermediate calls need both),
+  ETD cannot precede ETA, and each call must arrive after the previous one departs.
+- Voyage status: `Scheduled -> Underway -> Completed`, and `Cancelled` from Scheduled or Underway. The rotation
+  is editable only while Scheduled. Actual arrival/departure times are recorded while Underway, in rotation
+  order. Completing needs the arrival at the last port; cancelling is blocked while active bookings are on it.
+- **Schedule search** (`GET /api/schedules`) lists open sailings where the loading port comes before the
+  discharge port, inside a departure window (default the next 90 days). An underway voyage stops taking
+  bookings from a port once it has left it.
+- A **booking** can sail on a voyage only if that voyage calls at its loading port before its discharge port.
+  Shippers pick a sailing while drafting; Ops can assign or change it on a confirmed booking. A rotation edit
+  that would strand an active booking is refused.
+
+In Development, three fictional vessels with two sailings each on the Shanghai to Hamburg lane are seeded.
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -109,7 +128,7 @@ scripts/test.sh       # .NET + Angular tests
 1. Reference data and container master, ISO 6346 (done)
 2. Auth and bookings (done)
 3. Container movements, tracking and live chat (done)
-4. Vessels and voyages
+4. Vessels and voyages (done)
 5. Tariffs and detention/demurrage calculator
 6. Documents (Bill of Lading PDF, exports)
 7. Performance demo

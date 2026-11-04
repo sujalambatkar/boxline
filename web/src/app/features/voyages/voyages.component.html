@@ -1,0 +1,84 @@
+<div class="header">
+  <h1>Voyages</h1>
+  <a mat-flat-button color="primary" routerLink="/voyages/new">
+    <mat-icon>add</mat-icon>
+    New voyage
+  </a>
+</div>
+
+<div class="filters">
+  <mat-form-field appearance="outline" class="search">
+    <mat-label>Search voyage or vessel</mat-label>
+    <input matInput [formControl]="search" autocomplete="off" />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [formControl]="statusFilter">
+      <mat-option value="">All statuses</mat-option>
+      <mat-option *ngFor="let status of statuses" [value]="status">{{ statusLabels[status] }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Vessel</mat-label>
+    <mat-select [formControl]="vesselFilter">
+      <mat-option [value]="null">Any vessel</mat-option>
+      <mat-option *ngFor="let vessel of vessels" [value]="vessel.id">{{ vessel.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Calls at port</mat-label>
+    <mat-select [formControl]="portFilter">
+      <mat-option [value]="null">Any port</mat-option>
+      <mat-option *ngFor="let port of ports" [value]="port.id">{{ port.unLocode }} · {{ port.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-button *ngIf="hasFilters" (click)="clearFilters()">Clear filters</button>
+</div>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<div class="table-wrapper mat-elevation-z1">
+  <table mat-table [dataSource]="voyages" [trackBy]="trackById">
+    <ng-container matColumnDef="number">
+      <th mat-header-cell *matHeaderCellDef>Voyage</th>
+      <td mat-cell *matCellDef="let row" class="mono">{{ row.voyageNumber }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="vessel">
+      <th mat-header-cell *matHeaderCellDef>Vessel</th>
+      <td mat-cell *matCellDef="let row">{{ row.vessel.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="route">
+      <th mat-header-cell *matHeaderCellDef>Rotation</th>
+      <td mat-cell *matCellDef="let row" class="mono">{{ route(row) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="departure">
+      <th mat-header-cell *matHeaderCellDef>Departs</th>
+      <td mat-cell *matCellDef="let row">{{ departure(row) | date: 'dd MMM yyyy' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let row"><span class="chip" [attr.data-status]="row.status">{{ statusLabel(row) }}</span></td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns" class="row" tabindex="0" (click)="open(row)" (keydown.enter)="open(row)"></tr>
+
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell empty" [attr.colspan]="columns.length">
+        {{ loading ? 'Loading…' : hasFilters ? 'No voyages match your filters.' : 'No voyages yet.' }}
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [length]="totalCount" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="pageSizeOptions"
+    showFirstLastButtons (page)="onPage($event)"></mat-paginator>
+</div>

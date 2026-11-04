@@ -43,10 +43,18 @@ describe('BookingService', () => {
   });
 
   it('sends the row version with an update', () => {
-    service.update(5, { polId: 1, podId: 2, cargoDescription: 'x', lines: [] }, 'AAAB').subscribe();
+    service.update(5, { polId: 1, podId: 2, cargoDescription: 'x', lines: [], voyageId: null }, 'AAAB').subscribe();
 
     const request = http.expectOne(r => r.method === 'PUT' && r.url.endsWith('/bookings/5'));
     expect(request.request.body.rowVersion).toBe('AAAB');
+  });
+
+  it('assigns and clears a voyage through its own endpoint', () => {
+    service.assignVoyage(5, 12).subscribe();
+    service.assignVoyage(5, null).subscribe();
+
+    const requests = http.match(r => r.method === 'PUT' && r.url.endsWith('/bookings/5/voyage'));
+    expect(requests.map(r => r.request.body)).toEqual([{ voyageId: 12 }, { voyageId: null }]);
   });
 
   it('posts confirm and cancel without a body', () => {

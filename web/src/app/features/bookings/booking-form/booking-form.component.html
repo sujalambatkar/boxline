@@ -14,6 +14,12 @@
     Created {{ booking.createdAt | date: 'dd MMM yyyy, HH:mm' }} · Updated {{ booking.updatedAt | date: 'dd MMM yyyy, HH:mm' }}
   </p>
 
+  <p class="meta" *ngIf="booking?.voyage as voyage" data-testid="voyage">
+    Sailing: <strong>{{ voyage.vesselName }} · {{ voyage.voyageNumber }}</strong>
+    <ng-container *ngIf="voyage.departure"> · departs {{ voyage.departure | date: 'dd MMM yyyy' }}</ng-container>
+    <ng-container *ngIf="voyage.arrival"> · arrives {{ voyage.arrival | date: 'dd MMM yyyy' }}</ng-container>
+  </p>
+
   <p class="notice" *ngIf="booking && !canEdit" role="status">
     This booking is {{ statusLabels[booking.status] | lowercase }} and can no longer be edited.
   </p>
@@ -50,6 +56,15 @@
     <p class="field-error" *ngIf="form.hasError('samePorts')" role="alert">
       The port of discharge must differ from the port of loading.
     </p>
+
+    <app-sailing-select
+      *ngIf="canEdit"
+      [polId]="form.controls.polId.value"
+      [podId]="form.controls.podId.value"
+      [value]="form.controls.voyageId.value"
+      [current]="booking?.voyage ?? null"
+      (valueChange)="setVoyage($event)"
+    ></app-sailing-select>
 
     <mat-form-field appearance="outline" class="full">
       <mat-label>Cargo description</mat-label>
@@ -114,6 +129,20 @@
       </button>
     </div>
   </form>
+
+  <section class="assign" *ngIf="canAssignVoyage" aria-label="Assign sailing">
+    <h2 class="section">Sailing</h2>
+    <app-sailing-select
+      [polId]="booking!.pol.id"
+      [podId]="booking!.pod.id"
+      [value]="assignVoyageId"
+      [current]="booking!.voyage"
+      (valueChange)="assignVoyageId = $event"
+    ></app-sailing-select>
+    <button mat-stroked-button color="primary" type="button" (click)="assignVoyage()" [disabled]="!assignChanged || assigning">
+      {{ assigning ? 'Saving…' : 'Update sailing' }}
+    </button>
+  </section>
 
   <app-chat-panel *ngIf="booking" [bookingId]="booking.id"></app-chat-panel>
 </ng-container>

@@ -43,6 +43,7 @@ export class BookingFormComponent implements OnInit {
       polId: new FormControl<number | null>(null, Validators.required),
       podId: new FormControl<number | null>(null, Validators.required),
       cargoDescription: this.fb.control('', [Validators.required, Validators.maxLength(MAX_CARGO_DESCRIPTION_LENGTH)]),
+      voyageId: new FormControl<number | null>(null),
       lines: new FormArray<LineGroup>([], [minLines(1), uniqueContainerTypes()]),
     },
     { validators: differentPorts() },
@@ -54,6 +55,9 @@ export class BookingFormComponent implements OnInit {
 
   loading = true;
   saving = false;
+  /** The sailing Ops have picked for a confirmed booking, not yet applied. */
+  assignVoyageId: number | null = null;
+  assigning = false;
   /** Validation messages returned by the API for the last save. */
   serverErrors: string[] = [];
   /** Set when the API reports the booking changed underneath us. */
@@ -90,6 +94,15 @@ export class BookingFormComponent implements OnInit {
 
   get canCancel(): boolean {
     return !!this.booking?.allowedTransitions.includes('Cancelled');
+  }
+
+  /** Ops can put a confirmed booking on a sailing (or move it) without editing the booking itself. */
+  get canAssignVoyage(): boolean {
+    return this.isOps && this.booking?.status === 'Confirmed';
+  }
+
+  get assignChanged(): boolean {
+    return this.assignVoyageId !== (this.booking?.voyageId ?? null);
   }
 
   get totalContainers(): number {
@@ -149,6 +162,39 @@ export class BookingFormComponent implements OnInit {
     this.lines.removeAt(index);
     this.lines.markAsTouched();
     this.form.markAsDirty();
+  }
+
+  /** The user picked a sailing (or "no sailing yet") in the form. */
+  setVoyage(voyageId: number | null): void {
+    this.form.controls.voyageId.setValue(voyageId);
+    this.form.controls.voyageId.markAsDirty();
+    this.form.markAsDirty();
+  }
+
+  assignVoyage(): void {
+    const current = this.booking;
+    if (!current || this.assigning) {
+      return;
+    }
+
+    this.assigning = true;
+    this.conflictMessage = null;
+    this.serverErrors = [];
+    this.bookingService.assignVoyage(current.id, this.assignVoyageId).subscribe({
+      next: updated => {
+        this.assigning = false;
+        this.applyBooking(updated);
+        this.snackBar.open(
+          updated.voyage ? `Booking ${updated.bookingNumber} is now on ${updated.voyage.voyageNumber}.` : `Booking ${updated.bookingNumber} has no sailing.`,
+          undefined,
+          { duration: 4000 },
+        );
+      },
+      error: (error: HttpErrorResponse) => {
+        this.assigning = false;
+        this.showError(error);
+      },
+    });
   }
 
   typeLabel(type: ContainerType): string {
@@ -259,10 +305,13 @@ export class BookingFormComponent implements OnInit {
         polId: booking.pol.id,
         podId: booking.pod.id,
         cargoDescription: booking.cargoDescription,
+        voyageId: booking.voyageId,
         lines: booking.lines.map(line => ({ containerTypeId: line.containerTypeId, quantity: line.quantity })),
       },
       { emitEvent: false },
     );
+
+    this.assignVoyageId = booking.voyageId;
 
     if (booking.status === 'Draft') {
       this.form.enable({ emitEvent: false });
@@ -278,6 +327,7 @@ export class BookingFormComponent implements OnInit {
       polId: value.polId as number,
       podId: value.podId as number,
       cargoDescription: value.cargoDescription.trim(),
+      voyageId: value.voyageId,
       lines: value.lines.map(line => ({
         containerTypeId: line.containerTypeId as number,
         quantity: Number(line.quantity),

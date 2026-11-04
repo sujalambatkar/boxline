@@ -1,0 +1,13 @@
+<mat-form-field appearance="outline" class="field">
+  <mat-label>Sailing (optional)</mat-label>
+  <mat-select [value]="value" [disabled]="disabled || !hasRoute" (selectionChange)="select($event.value)">
+    <mat-option [value]="null">No sailing yet</mat-option>
+    <mat-option *ngFor="let choice of choices" [value]="choice.id">{{ choice.label }}</mat-option>
+  </mat-select>
+  <mat-hint *ngIf="!hasRoute">Choose two different ports to see sailings.</mat-hint>
+  <mat-hint *ngIf="hasRoute && loading">Looking for sailings…</mat-hint>
+  <mat-hint *ngIf="hasRoute && failed">Could not load sailings. You can still book without one.</mat-hint>
+  <mat-hint *ngIf="hasRoute && loaded && !loading && !failed && choices.length === 0">
+    No open sailings on this route in the next 90 days.
+  </mat-hint>
+</mat-form-field>

@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit vessel' : 'Add vessel' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()">
+  <mat-dialog-content class="content">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" placeholder="MV BoxLine Aurora" autocomplete="off" cdkFocusInitial />
+      <mat-error>Enter the vessel's name.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>IMO number</mat-label>
+      <input matInput formControlName="imoNumber" placeholder="9074729" autocomplete="off" class="mono" />
+      <mat-hint *ngIf="checkDigitHint && !imoError">{{ checkDigitHint }}</mat-hint>
+      <mat-error>{{ imoError }}</mat-error>
+    </mat-form-field>
+
+    <p class="server-error" *ngIf="serverError" role="alert">{{ serverError }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+  </mat-dialog-actions>
+</form>

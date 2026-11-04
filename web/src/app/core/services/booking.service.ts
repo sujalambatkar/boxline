@@ -49,6 +49,11 @@ export class BookingService {
     return this.http.put<Booking>(`${this.url}/${id}`, { ...request, rowVersion });
   }
 
+  /** Puts a booking on a sailing, or takes it off with null. Ops only. */
+  assignVoyage(id: number, voyageId: number | null): Observable<Booking> {
+    return this.http.put<Booking>(`${this.url}/${id}/voyage`, { voyageId });
+  }
+
   confirm(id: number): Observable<Booking> {
     return this.http.post<Booking>(`${this.url}/${id}/confirm`, null);
   }

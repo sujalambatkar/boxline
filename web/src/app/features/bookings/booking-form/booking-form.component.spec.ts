@@ -1,5 +1,5 @@
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -16,6 +16,17 @@ import { BookingFormComponent } from './booking-form.component';
 @Component({ selector: 'app-chat-panel', template: '' })
 class ChatPanelStubComponent {
   @Input() bookingId!: number;
+}
+
+/** Stands in for the sailing picker; its own behaviour is tested separately. */
+@Component({ selector: 'app-sailing-select', template: '' })
+class SailingSelectStubComponent {
+  @Input() polId: number | null = null;
+  @Input() podId: number | null = null;
+  @Input() value: number | null = null;
+  @Input() current: unknown = null;
+  @Input() disabled = false;
+  @Output() valueChange = new EventEmitter<number | null>();
 }
 
 describe('BookingFormComponent', () => {
@@ -36,6 +47,7 @@ describe('BookingFormComponent', () => {
     pol: { id: 1, unLocode: 'INNSA', name: 'Nhava Sheva' },
     pod: { id: 2, unLocode: 'AEJEA', name: 'Jebel Ali' },
     voyageId: null,
+    voyage: null,
     cargoDescription: 'Cotton',
     status: 'Draft',
     allowedTransitions: ['Confirmed'],
@@ -54,12 +66,12 @@ describe('BookingFormComponent', () => {
   let dialogAnswer: boolean;
 
   /** Creates the component for a new booking (no id) or an existing one, answering the three loading calls. */
-  function create(id: string | null = null, loaded?: Booking): void {
+  function create(id: string | null = null, loaded?: Booking, ops = false): void {
     TestBed.configureTestingModule({
-      declarations: [BookingFormComponent, ChatPanelStubComponent],
+      declarations: [BookingFormComponent, ChatPanelStubComponent, SailingSelectStubComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
       providers: [
-        { provide: AuthService, useValue: { hasRole: () => false } },
+        { provide: AuthService, useValue: { hasRole: (...roles: string[]) => ops && roles.includes('Ops') } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } } },
       ],
     });
@@ -87,6 +99,22 @@ describe('BookingFormComponent', () => {
 
   describe('new booking', () => {
     beforeEach(() => create());
+
+    it('sends the sailing the user picked and marks the form as changed', () => {
+      component.form.patchValue({ polId: 1, podId: 2, cargoDescription: 'x' });
+      component.lines.at(0).patchValue({ containerTypeId: 10, quantity: 1 });
+      component.form.markAsPristine();
+
+      component.setVoyage(42);
+      expect(component.form.dirty).toBeTrue();
+      component.save();
+
+      expect(http.expectOne(r => r.method === 'POST').request.body.voyageId).toBe(42);
+    });
+
+    it('offers the sailing picker for a draft', () => {
+      expect(fixture.nativeElement.querySelector('app-sailing-select')).not.toBeNull();
+    });
 
     it('has no conversation until the booking exists', () => {
       expect(fixture.nativeElement.querySelector('app-chat-panel')).toBeNull();
@@ -167,6 +195,7 @@ describe('BookingFormComponent', () => {
         polId: 1,
         podId: 2,
         cargoDescription: 'Cotton garments',
+        voyageId: null,
         lines: [{ containerTypeId: 10, quantity: 3 }],
       });
       request.flush(existing({ id: 9, bookingNumber: 'BL-202611-0009' }));
@@ -288,9 +317,102 @@ describe('BookingFormComponent', () => {
     });
   });
 
+  describe('sailing on an existing booking', () => {
+    const voyage = { id: 9, voyageNumber: 'BXL2612E', vesselName: 'MV Aurora', departure: '2026-12-01T08:00:00Z', arrival: '2026-12-20T08:00:00Z' };
+
+    it('shows the sailing a booking is on, with its dates', () => {
+      create('5', existing({ voyageId: 9, voyage }));
+
+      const text = (fixture.nativeElement.querySelector('[data-testid="voyage"]') as HTMLElement).textContent!;
+      expect(text).toContain('MV Aurora · BXL2612E');
+      expect(text).toContain('departs 01 Dec 2026');
+      expect(text).toContain('arrives 20 Dec 2026');
+      expect(component.form.controls.voyageId.value).toBe(9);
+    });
+
+    it('keeps the sailing when a draft is saved unchanged', () => {
+      create('5', existing({ voyageId: 9, voyage }));
+      component.form.markAsDirty();
+
+      component.save();
+
+      expect(http.expectOne(r => r.method === 'PUT').request.body.voyageId).toBe(9);
+    });
+
+    it('can remove the sailing from a draft', () => {
+      create('5', existing({ voyageId: 9, voyage }));
+
+      component.setVoyage(null);
+      component.save();
+
+      expect(http.expectOne(r => r.method === 'PUT').request.body.voyageId).toBeNull();
+    });
+
+    it('does not offer the assign panel to a shipper', () => {
+      create('5', existing({ status: 'Confirmed', allowedTransitions: ['Cancelled'] }));
+
+      expect(component.canAssignVoyage).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.assign')).toBeNull();
+    });
+
+    it('does not offer the assign panel to Ops for a draft or a cancelled booking', () => {
+      create('5', existing(), true);
+      expect(component.canAssignVoyage).toBeFalse();
+    });
+
+    describe('as Ops on a confirmed booking', () => {
+      beforeEach(() => create('5', existing({ status: 'Confirmed', allowedTransitions: ['Cancelled'] }), true));
+
+      it('shows the assign panel and the booking itself stays read-only', () => {
+        expect(component.canAssignVoyage).toBeTrue();
+        expect(component.canEdit).toBeFalse();
+        expect(fixture.nativeElement.querySelector('.assign')).not.toBeNull();
+        expect(component.assignChanged).toBeFalse();
+      });
+
+      it('assigns the chosen sailing and shows it', () => {
+        component.assignVoyageId = 9;
+        expect(component.assignChanged).toBeTrue();
+
+        component.assignVoyage();
+
+        const request = http.expectOne(r => r.method === 'PUT' && r.url.endsWith('/bookings/5/voyage'));
+        expect(request.request.body).toEqual({ voyageId: 9 });
+        request.flush(existing({ status: 'Confirmed', allowedTransitions: ['Cancelled'], voyageId: 9, voyage }));
+
+        expect(component.booking?.voyage?.voyageNumber).toBe('BXL2612E');
+        expect(component.assignChanged).toBeFalse();
+        expect(component.assigning).toBeFalse();
+      });
+
+      it('can take the booking off its sailing', () => {
+        component.assignVoyageId = null;
+        component.booking = { ...component.booking!, voyageId: 9, voyage };
+        expect(component.assignChanged).toBeTrue();
+
+        component.assignVoyage();
+
+        expect(http.expectOne(r => r.method === 'PUT' && r.url.endsWith('/voyage')).request.body).toEqual({ voyageId: null });
+      });
+
+      it('explains why a sailing was refused', () => {
+        component.assignVoyageId = 9;
+
+        component.assignVoyage();
+        http.expectOne(r => r.method === 'PUT' && r.url.endsWith('/voyage')).flush(
+          { errors: { VoyageId: ['Voyage BXL2612E does not sail from INNSA to AEJEA in that order.'] } },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+        expect(component.serverErrors).toEqual(['Voyage BXL2612E does not sail from INNSA to AEJEA in that order.']);
+        expect(component.assigning).toBeFalse();
+      });
+    });
+  });
+
   it('goes back to the list when the booking does not exist', () => {
     TestBed.configureTestingModule({
-      declarations: [BookingFormComponent, ChatPanelStubComponent],
+      declarations: [BookingFormComponent, ChatPanelStubComponent, SailingSelectStubComponent],
       imports: [SharedModule, HttpClientTestingModule, NoopAnimationsModule, RouterTestingModule],
       providers: [
         { provide: AuthService, useValue: { hasRole: () => false } },

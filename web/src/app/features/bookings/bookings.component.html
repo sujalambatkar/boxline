@@ -73,6 +73,11 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="voyage">
+      <th mat-header-cell *matHeaderCellDef>Voyage</th>
+      <td mat-cell *matCellDef="let row" class="mono">{{ row.voyage?.voyageNumber ?? '—' }}</td>
+    </ng-container>
+
     <ng-container matColumnDef="containers">
       <th mat-header-cell *matHeaderCellDef>Containers</th>
       <td mat-cell *matCellDef="let row">{{ row.totalContainers }}</td>
