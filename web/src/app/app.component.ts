@@ -18,6 +18,7 @@ interface NavItem {
 export class AppComponent implements OnInit {
   readonly navItems: NavItem[] = [
     { label: 'Bookings', icon: 'inventory_2', path: '/bookings' },
+    { label: 'Containers', icon: 'view_in_ar', path: '/containers' },
     { label: 'Tracking', icon: 'location_searching', path: '/tracking' },
     { label: 'Vessels', icon: 'directions_boat', path: '/vessels' },
     { label: 'Tariffs', icon: 'request_quote', path: '/tariffs' },

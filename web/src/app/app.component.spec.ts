@@ -36,12 +36,13 @@ describe('AppComponent', () => {
     fixture.detectChanges();
   }
 
-  it('lists the four main navigation entries', () => {
+  it('lists the main navigation entries', () => {
     createComponent();
     const links = (fixture.nativeElement as HTMLElement).querySelectorAll('mat-nav-list a');
 
     expect(Array.from(links).map(a => a.textContent?.trim())).toEqual([
       'inventory_2Bookings',
+      'view_in_arContainers',
       'location_searchingTracking',
       'directions_boatVessels',
       'request_quoteTariffs',

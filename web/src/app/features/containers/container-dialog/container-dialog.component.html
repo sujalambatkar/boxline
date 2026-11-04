@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit container' : 'Add container' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()">
+  <mat-dialog-content class="content">
+    <mat-form-field appearance="outline">
+      <mat-label>Container number</mat-label>
+      <input matInput formControlName="number" placeholder="CSQU3054383" autocomplete="off" maxlength="15"
+        class="mono" cdkFocusInitial />
+      <mat-hint *ngIf="!isEdit && checkDigitHint && !numberError">{{ checkDigitHint }}</mat-hint>
+      <mat-hint *ngIf="isEdit">The number cannot be changed.</mat-hint>
+      <mat-error>{{ numberError }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="containerTypeId">
+        <mat-option *ngFor="let type of data.types" [value]="type.id">{{ type.code }} · {{ type.description }}</mat-option>
+      </mat-select>
+      <mat-error>Select a container type.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Ownership</mat-label>
+      <mat-select formControlName="ownershipType">
+        <mat-option *ngFor="let ownership of ownerships" [value]="ownership">{{ ownershipLabels[ownership] }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select formControlName="status">
+        <mat-option *ngFor="let status of statuses" [value]="status">{{ statusLabels[status] }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <p class="server-error" *ngIf="serverError" role="alert">{{ serverError }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving">
+      {{ saving ? 'Saving…' : 'Save' }}
+    </button>
+  </mat-dialog-actions>
+</form>

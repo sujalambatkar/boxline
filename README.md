@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phase 0 (foundation) is complete; see the roadmap below.
+> Work in progress. Phases 0 (foundation) and 1 (reference data and container master) are complete; see the roadmap below.
 
 ## Stack
 
@@ -42,6 +42,14 @@ dotnet user-secrets set "Jwt:Secret" "<random string, at least 32 characters>"
 
 `src/BoxLine.Api/appsettings.Example.json` shows the expected shape.
 
+In Development the API applies migrations and seeds 7 ports, 6 container types and 200 sample
+containers (all with valid ISO 6346 check digits) on startup. It only seeds empty tables.
+
+## Tests
+
+Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
+seeded automatically), so they never modify development data. A guard test fails if that isolation breaks.
+
 ## Run
 
 ```bash
@@ -54,7 +62,7 @@ scripts/test.sh       # .NET + Angular tests
 ## Roadmap
 
 0. Foundation (done)
-1. Reference data and container master (ISO 6346)
+1. Reference data and container master, ISO 6346 (done)
 2. Auth and bookings
 3. Container movements, tracking and live chat
 4. Vessels and voyages

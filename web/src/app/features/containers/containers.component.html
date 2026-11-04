@@ -1,0 +1,86 @@
+<div class="header">
+  <h1>Containers</h1>
+  <button mat-flat-button color="primary" (click)="add()" [disabled]="types.length === 0">
+    <mat-icon>add</mat-icon>
+    Add container
+  </button>
+</div>
+
+<div class="filters">
+  <mat-form-field appearance="outline" class="search">
+    <mat-label>Search container number</mat-label>
+    <input matInput [formControl]="search" placeholder="e.g. CSQU3054" autocomplete="off" />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Type</mat-label>
+    <mat-select [formControl]="typeFilter">
+      <mat-option [value]="null">All types</mat-option>
+      <mat-option *ngFor="let type of types" [value]="type.id">{{ type.code }} · {{ type.description }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [formControl]="statusFilter">
+      <mat-option value="">All statuses</mat-option>
+      <mat-option *ngFor="let status of statuses" [value]="status">{{ statusLabels[status] }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-button *ngIf="hasFilters" (click)="clearFilters()">Clear filters</button>
+</div>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+<div class="table-wrapper mat-elevation-z1">
+  <table mat-table [dataSource]="containers" [trackBy]="trackById" matSort matSortActive="number" matSortDirection="asc"
+    matSortDisableClear (matSortChange)="onSort($event)">
+    <ng-container matColumnDef="number">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Container no.</th>
+      <td mat-cell *matCellDef="let row" class="mono">{{ row.number }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+      <td mat-cell *matCellDef="let row">{{ row.containerTypeCode }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="ownership">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Ownership</th>
+      <td mat-cell *matCellDef="let row">{{ ownershipLabel(row) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let row">
+        <span class="chip" [attr.data-status]="row.status">{{ statusLabel(row) }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef class="actions"></th>
+      <td mat-cell *matCellDef="let row" class="actions">
+        <button mat-icon-button matTooltip="Edit" aria-label="Edit container" (click)="edit(row)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Delete" aria-label="Delete container" (click)="remove(row)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns"></tr>
+    <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell empty" [attr.colspan]="columns.length">
+        {{ loading ? 'Loading…' : 'No containers match your filters.' }}
+      </td>
+    </tr>
+  </table>
+
+  <mat-paginator [length]="totalCount" [pageIndex]="pageIndex" [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions" showFirstLastButtons (page)="onPage($event)"></mat-paginator>
+</div>
