@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<IPortRepository, PortRepository>();
         services.AddScoped<IContainerTypeRepository, ContainerTypeRepository>();
         services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IBookingRepository, BookingRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         QuestPDF.Settings.License = LicenseType.Community;

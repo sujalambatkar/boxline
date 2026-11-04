@@ -9,9 +9,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace BoxLine.Tests.Api;
 
 [Collection(ApiCollection.Name)]
-public class ContainerEndpointTests(BoxLineApiFactory factory)
+public class ContainerEndpointTests(BoxLineApiFactory factory) : IAsyncLifetime
 {
-    private readonly HttpClient client = factory.CreateClient();
+    private HttpClient client = null!;
+
+    public async Task InitializeAsync() => client = await factory.CreateOpsClientAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task SeededContainers_AllHaveValidIso6346Numbers()

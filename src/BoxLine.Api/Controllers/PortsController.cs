@@ -2,11 +2,14 @@ using BoxLine.Api.Contracts;
 using BoxLine.Core.Entities;
 using BoxLine.Core.Interfaces;
 using BoxLine.Core.Ports;
+using BoxLine.Api.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BoxLine.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/ports")]
 public sealed class PortsController(IPortRepository ports) : ControllerBase
 {
@@ -25,6 +28,7 @@ public sealed class PortsController(IPortRepository ports) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<ActionResult<PortResponse>> Create(PortRequest request, CancellationToken ct)
     {
         var problem = await ValidateAsync(request, excludeId: null, ct);
@@ -41,6 +45,7 @@ public sealed class PortsController(IPortRepository ports) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<ActionResult<PortResponse>> Update(int id, PortRequest request, CancellationToken ct)
     {
         var port = await ports.GetByIdAsync(id, ct);
@@ -62,6 +67,7 @@ public sealed class PortsController(IPortRepository ports) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var port = await ports.GetByIdAsync(id, ct);

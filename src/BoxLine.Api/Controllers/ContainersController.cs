@@ -2,11 +2,14 @@ using BoxLine.Api.Contracts;
 using BoxLine.Core.Containers;
 using BoxLine.Core.Entities;
 using BoxLine.Core.Interfaces;
+using BoxLine.Api.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BoxLine.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = Roles.Ops)]
 [Route("api/containers")]
 public sealed class ContainersController(IContainerRepository containers, IContainerTypeRepository types) : ControllerBase
 {

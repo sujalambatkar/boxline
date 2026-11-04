@@ -12,6 +12,12 @@ public class BoxLineDbContext(DbContextOptions<BoxLineDbContext> options) : DbCo
 
     public DbSet<Container> Containers => Set<Container>();
 
+    public DbSet<User> Users => Set<User>();
+
+    public DbSet<Booking> Bookings => Set<Booking>();
+
+    public DbSet<BookingLine> BookingLines => Set<BookingLine>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BoxLineDbContext).Assembly);

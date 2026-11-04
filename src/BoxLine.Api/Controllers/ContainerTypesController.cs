@@ -1,11 +1,14 @@
 using BoxLine.Api.Contracts;
 using BoxLine.Core.Entities;
 using BoxLine.Core.Interfaces;
+using BoxLine.Api.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BoxLine.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/container-types")]
 public sealed class ContainerTypesController(IContainerTypeRepository types) : ControllerBase
 {
@@ -24,6 +27,7 @@ public sealed class ContainerTypesController(IContainerTypeRepository types) : C
     }
 
     [HttpPost]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<ActionResult<ContainerTypeResponse>> Create(ContainerTypeRequest request, CancellationToken ct)
     {
         var code = request.Code.Trim().ToUpperInvariant();
@@ -39,6 +43,7 @@ public sealed class ContainerTypesController(IContainerTypeRepository types) : C
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<ActionResult<ContainerTypeResponse>> Update(int id, ContainerTypeRequest request, CancellationToken ct)
     {
         var type = await types.GetByIdAsync(id, ct);
@@ -62,6 +67,7 @@ public sealed class ContainerTypesController(IContainerTypeRepository types) : C
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = Roles.Ops)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var type = await types.GetByIdAsync(id, ct);

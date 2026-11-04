@@ -1,11 +1,16 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
+using BoxLine.Api.Auth;
 using BoxLine.Api.Configuration;
 using BoxLine.Api.Infrastructure;
+using BoxLine.Core.Bookings;
+using BoxLine.Core.Entities;
 using BoxLine.Infrastructure;
 using BoxLine.Infrastructure.Seeding;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
@@ -19,6 +24,12 @@ if (jwt.Secret.Length < 32)
 }
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddSingleton<TokenService>();
+builder.Services.AddScoped<BookingService>();
+builder.Services.AddScoped<DevelopmentUserSeeder>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -37,6 +48,7 @@ builder.Services.AddHttpLogging(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -46,6 +58,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Secret)),
             ValidateLifetime = true,
+            NameClaimType = JwtRegisteredClaimNames.Sub,
+            RoleClaimType = TokenService.RoleClaim,
             ClockSkew = TimeSpan.FromMinutes(1),
         };
     });
@@ -82,6 +96,7 @@ if (app.Environment.IsDevelopment())
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<DatabaseSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<DevelopmentUserSeeder>().SeedAsync();
 }
 
 app.UseExceptionHandler();

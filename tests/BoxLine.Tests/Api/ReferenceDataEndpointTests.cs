@@ -7,9 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace BoxLine.Tests.Api;
 
 [Collection(ApiCollection.Name)]
-public class ReferenceDataEndpointTests(BoxLineApiFactory factory)
+public class ReferenceDataEndpointTests(BoxLineApiFactory factory) : IAsyncLifetime
 {
-    private readonly HttpClient client = factory.CreateClient();
+    private HttpClient client = null!;
+
+    public async Task InitializeAsync() => client = await factory.CreateOpsClientAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Ports_AreSeededWithTheMajorTradeLanes()
