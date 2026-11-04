@@ -1,5 +1,9 @@
 using System.Net;
+using BoxLine.Infrastructure.Persistence;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BoxLine.Tests.Api;
 
@@ -39,5 +43,14 @@ public class HealthEndpointTests(BoxLineApiFactory factory)
         var response = await client.SendAsync(request);
 
         response.Headers.GetValues("Access-Control-Allow-Origin").Should().ContainSingle("http://localhost:4200");
+    }
+
+    [Fact]
+    public void IntegrationTests_RunAgainstTheIsolatedTestDatabase_NeverDevelopmentData()
+    {
+        using var scope = factory.Services.CreateScope();
+        var connection = scope.ServiceProvider.GetRequiredService<BoxLineDbContext>().Database.GetConnectionString();
+
+        new SqlConnectionStringBuilder(connection).InitialCatalog.Should().Be(BoxLineApiFactory.TestDatabase);
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
@@ -9,25 +8,27 @@ namespace BoxLine.Tests.Api;
 /// <c>BoxLineTests</c> database on the same SQL Server so tests never touch development data.
 /// The Development startup path migrates and seeds that database on first use.
 /// </summary>
+/// <remarks>
+/// The override is applied through an environment variable rather than
+/// <c>ConfigureAppConfiguration</c>: <c>Program.cs</c> reads the connection string while the builder
+/// is being set up, before factory configuration callbacks run, so callbacks cannot change it.
+/// </remarks>
 public sealed class BoxLineApiFactory : WebApplicationFactory<Program>
 {
     public const string TestDatabase = "BoxLineTests";
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    public BoxLineApiFactory()
     {
-        builder.ConfigureAppConfiguration((_, config) =>
+        var secrets = new ConfigurationBuilder().AddUserSecrets<Program>().Build();
+        var connectionString = secrets.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not set in user-secrets.");
+
+        var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString)
         {
-            config.AddUserSecrets<Program>();
+            InitialCatalog = TestDatabase,
+        };
 
-            var connectionString = config.Build().GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not set in user-secrets.");
-
-            config.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:DefaultConnection"] =
-                    connectionString.Replace("Database=BoxLine;", $"Database={TestDatabase};", StringComparison.OrdinalIgnoreCase),
-            });
-        });
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", builder.ConnectionString);
     }
 }
 
