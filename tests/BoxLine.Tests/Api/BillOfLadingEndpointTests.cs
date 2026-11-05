@@ -31,7 +31,7 @@ public class BillOfLadingEndpointTests(BoxLineApiFactory factory) : IAsyncLifeti
     private static string Watermark(byte[] pdf)
     {
         using var document = PdfDocument.Open(pdf);
-        var big = document.GetPages().SelectMany(p => p.Letters).Where(l => l.PointSize > 100).OrderBy(l => l.GlyphRectangle.Left);
+        var big = document.GetPages().SelectMany(p => p.Letters).Where(l => l.PointSize > 100).OrderBy(l => l.BoundingBox.Left);
         return string.Concat(big.Select(l => l.Value));
     }
 

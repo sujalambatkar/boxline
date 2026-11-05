@@ -10,6 +10,7 @@ using BoxLine.Core.Chat;
 using BoxLine.Core.Detention;
 using BoxLine.Core.Documents;
 using BoxLine.Core.Movements;
+using BoxLine.Core.Reports;
 using BoxLine.Core.Voyages;
 using BoxLine.Core.Entities;
 using BoxLine.Infrastructure;
@@ -41,6 +42,7 @@ builder.Services.AddScoped<VoyageService>();
 builder.Services.AddScoped<ScheduleService>();
 builder.Services.AddScoped<DetentionService>();
 builder.Services.AddScoped<DocumentService>();
+builder.Services.AddScoped<UtilisationReportService>();
 builder.Services.AddSignalR()
     .AddJsonProtocol(options => options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddScoped<DevelopmentUserSeeder>();

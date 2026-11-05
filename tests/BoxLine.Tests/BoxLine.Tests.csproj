@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\BoxLine.Core\BoxLine.Core.csproj" />
     <ProjectReference Include="..\..\src\BoxLine.Infrastructure\BoxLine.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\BoxLine.Api\BoxLine.Api.csproj" />
+    <ProjectReference Include="..\..\tools\BoxLine.PerfTool\BoxLine.PerfTool.csproj" />
   </ItemGroup>
 
 </Project>

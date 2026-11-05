@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 to 6 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator, documents); see the roadmap below.
+> Work in progress. Phases 0 to 7 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator, documents, performance study); see the roadmap below.
 
 ## Stack
 
@@ -21,9 +21,10 @@ src/BoxLine.Api             controllers, JWT, Swagger, CORS, health
 src/BoxLine.Core            entities and domain rules (no EF / ASP.NET references)
 src/BoxLine.Infrastructure  EF Core context, migrations, repositories
 tests/BoxLine.Tests         xUnit tests
+tools/BoxLine.PerfTool      500,000-movement seeder and benchmark tool (separate BoxLinePerf database)
 web/                        Angular app
 scripts/                    helper scripts
-docs/                       diagrams and notes
+docs/                       notes, including PERFORMANCE.md
 ```
 
 ## Prerequisites
@@ -147,6 +148,17 @@ the calculator at `/detention`.
   Excel exports use real date and number cells, a filter row and a frozen header.
 - In the app: a "Download bill of lading" button on the booking page and an Export menu on the bookings list.
 
+## Utilisation report and performance
+
+`GET /api/reports/utilisation` (Ops only; `fromMonth`, `toMonth`, `location`, `page`, `pageSize`) returns container
+utilisation by month and port, with monthly totals for the chart, and defaults to the last twelve months. It runs
+a stored procedure through Dapper over a covering index. The **Reports** page shows a table and a chart. A deliberately
+naive version and an intermediate LINQ version are kept as the baseline and as the oracle for the correctness tests.
+
+`scripts/perf.sh seed` fills a separate `BoxLinePerf` database with 500,000 movements (never the development
+database) and `scripts/perf.sh measure` reruns the benchmark. Measured results, method and limits are in
+[docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
 ## Tests
 
 Integration tests run against a separate `BoxLineTests` database on the same SQL Server (created and
@@ -170,5 +182,5 @@ scripts/test.sh       # .NET + Angular tests
 4. Vessels and voyages (done)
 5. Tariffs and detention/demurrage calculator (done)
 6. Documents (Bill of Lading PDF, exports) (done)
-7. Performance demo
+7. Performance demo (done)
 8. Polish and documentation

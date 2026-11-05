@@ -1,6 +1,8 @@
 using BoxLine.Core.Interfaces;
+using BoxLine.Core.Reports;
 using BoxLine.Infrastructure.Documents;
 using BoxLine.Infrastructure.Persistence;
+using BoxLine.Infrastructure.Reports;
 using BoxLine.Infrastructure.Repositories;
 using BoxLine.Infrastructure.Seeding;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IVoyageRepository, VoyageRepository>();
         services.AddScoped<IDetentionTariffRepository, DetentionTariffRepository>();
         services.AddScoped<IDetentionSqlCalculator, SqlDetentionCalculator>();
+        services.AddScoped<IUtilisationReport, SqlUtilisationReport>();
         services.AddSingleton<IBillOfLadingRenderer, QuestPdfBillOfLadingRenderer>();
         services.AddSingleton<IBookingSpreadsheetWriter, MiniExcelBookingSpreadsheetWriter>();
         services.AddScoped<DatabaseSeeder>();

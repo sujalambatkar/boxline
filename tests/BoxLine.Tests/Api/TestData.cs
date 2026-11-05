@@ -18,12 +18,24 @@ public static class TestData
     public static async Task<string> NewContainerAsync(HttpClient ops, int? typeId = null)
     {
         var types = (await ops.GetFromJsonAsync<List<ContainerTypeResponse>>("/api/container-types"))!;
-        var body = $"TSTU{Random.Shared.Next(0, 1_000_000):D6}";
-        var number = body + Iso6346Validator.ComputeCheckDigit(body);
 
-        var response = await ops.PostAsJsonAsync("/api/containers", new CreateContainerRequest(number, typeId ?? types[0].Id, OwnershipType.Owned));
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return number;
+        // The test database keeps every container earlier runs created, so a random number can occasionally collide.
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var body = $"TSTU{Random.Shared.Next(0, 1_000_000):D6}";
+            var number = body + Iso6346Validator.ComputeCheckDigit(body);
+
+            var response = await ops.PostAsJsonAsync("/api/containers", new CreateContainerRequest(number, typeId ?? types[0].Id, OwnershipType.Owned));
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                continue;
+            }
+
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+            return number;
+        }
+
+        throw new InvalidOperationException("Could not create a unique test container.");
     }
 
     /// <summary>Creates a booking for the shipper and confirms it.</summary>

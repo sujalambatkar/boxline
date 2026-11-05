@@ -35,6 +35,12 @@ public class ContainerMovement
     /// <summary>When the event happened (UTC), as reported by operations.</summary>
     public DateTime OccurredAt { get; set; }
 
+    /// <summary>
+    /// The first day of the month of <see cref="OccurredAt"/>. Computed and stored by the database (never set by code)
+    /// so that month-based reports can use an index instead of evaluating a function on every row.
+    /// </summary>
+    public DateOnly OccurredMonth { get; private set; }
+
     public string? Remarks { get; set; }
 
     public int RecordedByUserId { get; set; }

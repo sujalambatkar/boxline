@@ -215,6 +215,11 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateOnly>("OccurredMonth")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("date")
+                        .HasComputedColumnSql("DATEFROMPARTS(YEAR([OccurredAt]), MONTH([OccurredAt]), 1)", true);
+
                     b.Property<DateTime>("RecordedAt")
                         .HasColumnType("datetime2");
 
@@ -232,6 +237,11 @@ namespace BoxLine.Infrastructure.Persistence.Migrations
                     b.HasIndex("RecordedByUserId");
 
                     b.HasIndex("ContainerId", "OccurredAt", "Id");
+
+                    b.HasIndex("OccurredMonth", "LocationUnLocode", "ContainerId")
+                        .HasDatabaseName("IX_ContainerMovements_Report");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("OccurredMonth", "LocationUnLocode", "ContainerId"), new[] { "EventType" });
 
                     b.ToTable("ContainerMovements");
                 });
