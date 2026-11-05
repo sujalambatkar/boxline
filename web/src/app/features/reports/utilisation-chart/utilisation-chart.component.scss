@@ -1,0 +1,59 @@
+.chart {
+  margin: 0;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 8px;
+
+  .peak {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 13px;
+  }
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  font-size: 11px;
+  fill: rgba(0, 0, 0, 0.7);
+
+  .grid line {
+    stroke: #e0e0e0;
+    stroke-width: 1;
+  }
+
+  .bars rect {
+    fill: #3f51b5;
+
+    &:hover {
+      fill: #283593;
+    }
+  }
+
+  .axis-title {
+    fill: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.empty {
+  padding: 24px 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

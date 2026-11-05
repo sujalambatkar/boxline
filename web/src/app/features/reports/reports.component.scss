@@ -1,0 +1,84 @@
+.intro {
+  max-width: 760px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+
+  mat-form-field {
+    width: 200px;
+  }
+}
+
+.note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: #fff3e0;
+}
+
+.card {
+  margin: 16px 0;
+  padding: 16px 24px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.meta {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.num {
+  text-align: right;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.util {
+  white-space: nowrap;
+
+  .track {
+    display: inline-block;
+    width: 80px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 4px;
+    background: #e8eaf6;
+    vertical-align: middle;
+    overflow: hidden;
+  }
+
+  .fill {
+    display: block;
+    height: 100%;
+    background: #3f51b5;
+  }
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.6);
+}

@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Vessels', icon: 'directions_boat', path: '/vessels', roles: ['Ops'] },
   { label: 'Voyages', icon: 'route', path: '/voyages', roles: ['Ops'] },
   { label: 'D&D calculator', icon: 'calculate', path: '/detention' },
+  { label: 'Reports', icon: 'assessment', path: '/reports', roles: ['Ops'] },
   { label: 'Tariffs', icon: 'request_quote', path: '/tariffs', roles: ['Ops'] },
 ];
 

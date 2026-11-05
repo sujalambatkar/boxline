@@ -1,0 +1,103 @@
+<div class="header">
+  <h1>Container utilisation</h1>
+</div>
+<p class="intro">
+  For each month and location: the movements recorded, the different containers that moved there, and what share of the whole
+  fleet that is. The chart shows the fleet as a whole for every month in the filter.
+</p>
+
+<div class="filters">
+  <mat-form-field appearance="outline">
+    <mat-label>From month</mat-label>
+    <input matInput type="month" [formControl]="fromMonth" [max]="toMonth.value || null" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>To month</mat-label>
+    <input matInput type="month" [formControl]="toMonth" [min]="fromMonth.value || null" />
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Location (UN/LOCODE)</mat-label>
+    <input matInput [formControl]="location" list="known-ports" placeholder="e.g. INNSA" autocomplete="off" class="mono" />
+    <datalist id="known-ports">
+      <option *ngFor="let port of ports" [value]="port.unLocode">{{ port.name }}</option>
+    </datalist>
+    <mat-error>Two letters, then three letters or digits 2-9.</mat-error>
+  </mat-form-field>
+
+  <button mat-button *ngIf="hasFilters" (click)="clearFilters()">Clear filters</button>
+</div>
+
+<p class="note" *ngIf="usingDefaultRange">No month range chosen, so the latest 12 months are shown.</p>
+
+<mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+<p class="message" *ngIf="message" role="alert">{{ message }}</p>
+
+<ng-container *ngIf="report">
+  <section class="card" aria-label="Chart">
+    <app-utilisation-chart [monthly]="report.monthly"></app-utilisation-chart>
+  </section>
+
+  <p class="meta">
+    {{ report.totalRows | number }} month/location rows · fleet of {{ report.fleetSize | number }} containers ·
+    produced in <strong data-testid="elapsed">{{ report.elapsedMilliseconds }} ms</strong>
+  </p>
+
+  <div class="table-wrapper mat-elevation-z1">
+    <table mat-table [dataSource]="report.rows" [trackBy]="trackByRow">
+      <ng-container matColumnDef="month">
+        <th mat-header-cell *matHeaderCellDef>Month</th>
+        <td mat-cell *matCellDef="let row">{{ row.month | date: 'MMM yyyy' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="location">
+        <th mat-header-cell *matHeaderCellDef>Location</th>
+        <td mat-cell *matCellDef="let row" class="mono">{{ row.location }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="port">
+        <th mat-header-cell *matHeaderCellDef>Port</th>
+        <td mat-cell *matCellDef="let row">{{ row.portName ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="movements">
+        <th mat-header-cell *matHeaderCellDef class="num">Movements</th>
+        <td mat-cell *matCellDef="let row" class="num">{{ row.movements | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="containers">
+        <th mat-header-cell *matHeaderCellDef class="num">Containers</th>
+        <td mat-cell *matCellDef="let row" class="num">{{ row.containers | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="loaded">
+        <th mat-header-cell *matHeaderCellDef class="num">Loaded</th>
+        <td mat-cell *matCellDef="let row" class="num">{{ row.loaded | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="discharged">
+        <th mat-header-cell *matHeaderCellDef class="num">Discharged</th>
+        <td mat-cell *matCellDef="let row" class="num">{{ row.discharged | number }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="utilisation">
+        <th mat-header-cell *matHeaderCellDef>Of fleet</th>
+        <td mat-cell *matCellDef="let row" class="util">
+          <span class="track" aria-hidden="true"><span class="fill" [style.width.%]="barWidth(row.utilisationPercent)"></span></span>
+          <span class="pct">{{ row.utilisationPercent }}%</span>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell empty" [attr.colspan]="columns.length">No movements match these filters.</td>
+      </tr>
+    </table>
+
+    <mat-paginator [length]="report.totalRows" [pageIndex]="pageIndex" [pageSize]="pageSize" [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons (page)="onPage($event)"></mat-paginator>
+  </div>
+</ng-container>

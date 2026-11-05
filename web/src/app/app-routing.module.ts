@@ -40,6 +40,11 @@ const routes: Routes = [
     loadChildren: () => import('./features/detention/detention.module').then(m => m.DetentionModule),
   },
   {
+    path: 'reports',
+    canActivate: [roleGuard('Ops')],
+    loadChildren: () => import('./features/reports/reports.module').then(m => m.ReportsModule),
+  },
+  {
     path: 'tariffs',
     canActivate: [roleGuard('Ops')],
     loadChildren: () => import('./features/tariffs/tariffs.module').then(m => m.TariffsModule),

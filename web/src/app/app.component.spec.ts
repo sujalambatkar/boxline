@@ -74,6 +74,7 @@ describe('AppComponent', () => {
       'directions_boatVessels',
       'routeVoyages',
       'calculateD&D calculator',
+      'assessmentReports',
       'request_quoteTariffs',
     ]);
     expect(el().querySelector('[data-testid="user"]')?.textContent).toContain('ops@boxline.test · Ops');

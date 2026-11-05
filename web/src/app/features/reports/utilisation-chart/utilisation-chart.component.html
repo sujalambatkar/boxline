@@ -1,0 +1,48 @@
+<figure class="chart">
+  <figcaption class="caption">
+    <strong>Fleet utilisation by month</strong>
+    <span class="peak" *ngIf="peak">
+      highest {{ peak.utilisationPercent }}% in {{ peakLabel }}
+    </span>
+  </figcaption>
+
+  <p class="empty" *ngIf="bars.length === 0">No movements in this period.</p>
+
+  <svg *ngIf="bars.length > 0" [attr.viewBox]="'0 0 ' + width + ' ' + height" class="svg" role="img" [attr.aria-label]="summary"
+    preserveAspectRatio="xMidYMid meet">
+    <title>{{ summary }}</title>
+
+    <g class="grid" aria-hidden="true">
+      <ng-container *ngFor="let tick of ticks">
+        <line [attr.x1]="margin.left" [attr.x2]="width - margin.right" [attr.y1]="tick.y" [attr.y2]="tick.y"></line>
+        <text [attr.x]="margin.left - 8" [attr.y]="tick.y + 4" text-anchor="end">{{ tick.label }}</text>
+      </ng-container>
+    </g>
+
+    <g class="bars">
+      <rect *ngFor="let bar of bars; trackBy: trackByMonth" [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width"
+        [attr.height]="bar.height" rx="2" data-testid="bar"><title>{{ bar.title }}</title></rect>
+    </g>
+
+    <g class="labels" aria-hidden="true">
+      <ng-container *ngFor="let bar of bars; trackBy: trackByMonth">
+        <text *ngIf="bar.showLabel" [attr.x]="bar.x + bar.width / 2" [attr.y]="height - margin.bottom + 18" text-anchor="middle">
+          {{ bar.label }}
+        </text>
+      </ng-container>
+    </g>
+
+    <text class="axis-title" [attr.x]="margin.left" [attr.y]="height - 6">Share of the fleet that moved that month</text>
+  </svg>
+
+  <!-- The same figures as a table for screen readers. -->
+  <table class="sr-only" *ngIf="bars.length > 0">
+    <caption>Fleet utilisation by month</caption>
+    <thead><tr><th>Month</th><th>Utilisation</th><th>Active containers</th><th>Movements</th></tr></thead>
+    <tbody>
+      <tr *ngFor="let month of data">
+        <td>{{ month.month }}</td><td>{{ month.utilisationPercent }}%</td><td>{{ month.activeContainers }}</td><td>{{ month.movements }}</td>
+      </tr>
+    </tbody>
+  </table>
+</figure>
