@@ -41,7 +41,14 @@ public sealed class MiniExcelBookingSpreadsheetWriter : IBookingSpreadsheetWrite
             {
                 Width = index switch
                 {
-                    0 => 18, 2 => 24, 5 => 14, 6 => 22, 7 or 8 or 12 or 13 => 18, 10 => 22, 11 => 40, _ => 14,
+                    0 => 18,
+                    2 => 24,
+                    5 => 14,
+                    6 => 22,
+                    7 or 8 or 12 or 13 => 18,
+                    10 => 22,
+                    11 => 40,
+                    _ => 14,
                 },
                 Format = index is 7 or 8 or 12 or 13 ? DateFormat : null,
             }).ToArray(),

@@ -72,7 +72,7 @@ public class ContainerEndpointTests(BoxLineApiFactory factory) : IAsyncLifetime
     {
         var typeId = await AnyTypeId();
 
-        var response = await client.PostAsJsonAsync("/api/containers",            new CreateContainerRequest("CSQU3054380", typeId, OwnershipType.Owned));
+        var response = await client.PostAsJsonAsync("/api/containers", new CreateContainerRequest("CSQU3054380", typeId, OwnershipType.Owned));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var problem = (await response.Content.ReadFromJsonAsync<ValidationProblemDetails>())!;
@@ -85,7 +85,7 @@ public class ContainerEndpointTests(BoxLineApiFactory factory) : IAsyncLifetime
         var typeId = await AnyTypeId();
         var number = NewUnusedNumber();
 
-        var create = await client.PostAsJsonAsync("/api/containers",            new CreateContainerRequest(number.ToLowerInvariant(), typeId, OwnershipType.Leased));
+        var create = await client.PostAsJsonAsync("/api/containers", new CreateContainerRequest(number.ToLowerInvariant(), typeId, OwnershipType.Leased));
         create.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = (await create.Content.ReadFromJsonAsync<ContainerResponse>(TestJson.Options))!;
         created.Number.Should().Be(number);
@@ -109,7 +109,7 @@ public class ContainerEndpointTests(BoxLineApiFactory factory) : IAsyncLifetime
     [Fact]
     public async Task Create_RejectsAnUnknownContainerType()
     {
-        var response = await client.PostAsJsonAsync("/api/containers",            new CreateContainerRequest(NewUnusedNumber(), 999_999, OwnershipType.Owned));
+        var response = await client.PostAsJsonAsync("/api/containers", new CreateContainerRequest(NewUnusedNumber(), 999_999, OwnershipType.Owned));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

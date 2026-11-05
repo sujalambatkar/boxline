@@ -1,0 +1,27 @@
+# SQL Server 2022 only: the API and the web app run on the host (scripts/run-api.sh, scripts/run-web.sh).
+# The image is amd64-only, so on Apple Silicon Docker runs it under emulation.
+#
+#   export MSSQL_SA_PASSWORD='<strong password>'   # never committed
+#   docker compose up -d
+#
+# It publishes port 1433 like the existing `boxline-sql` container, so stop that one first if it is running.
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD before starting}
+    ports:
+      - "1433:1433"
+    volumes:
+      - boxline-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  boxline-sql-data:

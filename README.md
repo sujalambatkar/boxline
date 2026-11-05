@@ -3,7 +3,7 @@
 A mini NVOCC (container shipping line) operations system: bookings, container tracking,
 vessels and voyages, detention/demurrage tariffs and documents.
 
-> Work in progress. Phases 0 to 7 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator, documents, performance study); see the roadmap below.
+> Work in progress. Phases 0 to 8 are complete (foundation, container master, auth and bookings, movements and live chat, vessels and voyages, detention tariffs and calculator, documents, performance study, documentation); see the roadmap below.
 
 ## Stack
 
@@ -14,6 +14,65 @@ vessels and voyages, detention/demurrage tariffs and documents.
 | Web | Angular 15 (NgModules), Angular Material 15, RxJS, SignalR client |
 | Tests | xUnit, FluentAssertions, Jasmine/Karma |
 
+## Architecture
+
+```mermaid
+flowchart LR
+    Web["Angular 15 app<br/>(NgModules, Material)"] -- "REST + JWT" --> Api
+    Web -- "SignalR (booking chat)" --> Api
+    subgraph Host
+      Api["BoxLine.Api<br/>controllers, auth, hub"] --> Core["BoxLine.Core<br/>entities, rules, services"]
+      Infra["BoxLine.Infrastructure<br/>EF Core, Dapper, QuestPDF, MiniExcel"] --> Core
+      Api --> Infra
+    end
+    Infra -- "TCP 1433" --> Sql[("SQL Server 2022<br/>Docker")]
+```
+
+`Core` has no EF or ASP.NET references; the API depends on `Core` interfaces and `Infrastructure` supplies the
+implementations. Booking numbers and movements are serialised with `sp_getapplock`; the detention calculator exists
+in C# and as a stored procedure, with parity tests.
+
+## Data model
+
+```mermaid
+erDiagram
+    User ||--o{ Booking : "ships"
+    User ||--o{ ChatMessage : "sends"
+    Booking ||--|{ BookingLine : "has"
+    Booking ||--o{ ChatMessage : "has"
+    Booking ||--o{ ContainerMovement : "references"
+    Booking }o--|| Port : "POL"
+    Booking }o--|| Port : "POD"
+    Booking }o--o| Voyage : "sails on"
+    BookingLine }o--|| ContainerType : "of type"
+    Container }o--|| ContainerType : "of type"
+    Container ||--o{ ContainerMovement : "moves"
+    Vessel ||--o{ Voyage : "operates"
+    Voyage ||--|{ VoyageCall : "calls at"
+    VoyageCall }o--|| Port : "port"
+    ContainerType ||--o{ DetentionTariff : "priced by"
+    DetentionTariff ||--|{ DetentionSlab : "has"
+```
+
+`ContainerMovement.LocationUnLocode` is a UN/LOCODE (a port or depot) rather than a foreign key, and
+`OccurredMonth` is a persisted computed column used by the utilisation report.
+
+## Quick start
+
+```bash
+export MSSQL_SA_PASSWORD='<strong password>'
+docker compose up -d                 # SQL Server only (or scripts/start-db.sh for an existing boxline-sql container)
+cd src/BoxLine.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=BoxLine;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Secret" "<random string, at least 32 characters>"
+cd ../.. && scripts/setup-db.sh      # applies the migrations (the API also does this in Development)
+scripts/run-api.sh                   # http://localhost:5000, prints the seeded account passwords once
+scripts/run-web.sh                   # http://localhost:4200
+```
+
+`docker-compose.yml` publishes port 1433 like the `boxline-sql` container created during setup, so stop that one first
+if you switch to compose.
+
 ## Layout
 
 ```
@@ -23,7 +82,8 @@ src/BoxLine.Infrastructure  EF Core context, migrations, repositories
 tests/BoxLine.Tests         xUnit tests
 tools/BoxLine.PerfTool      500,000-movement seeder and benchmark tool (separate BoxLinePerf database)
 web/                        Angular app
-scripts/                    helper scripts
+scripts/                    start/run/test/setup/perf helper scripts
+docker-compose.yml          SQL Server 2022 only
 docs/                       notes, including PERFORMANCE.md
 ```
 
@@ -183,4 +243,4 @@ scripts/test.sh       # .NET + Angular tests
 5. Tariffs and detention/demurrage calculator (done)
 6. Documents (Bill of Lading PDF, exports) (done)
 7. Performance demo (done)
-8. Polish and documentation
+8. Polish and documentation (done)
