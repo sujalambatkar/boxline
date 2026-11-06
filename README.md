@@ -14,6 +14,18 @@ vessels and voyages, detention/demurrage tariffs and documents.
 | Web | Angular 15 (NgModules), Angular Material 15, RxJS, SignalR client |
 | Tests | xUnit, FluentAssertions, Jasmine/Karma |
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Login](docs/screenshots/01-login.png) | ![Bookings](docs/screenshots/02-bookings-list.png) |
+| ![Booking detail](docs/screenshots/03-booking-detail.png) | ![New booking](docs/screenshots/04-new-booking.png) |
+| ![Tracking](docs/screenshots/06-tracking.png) | ![Detention calculator](docs/screenshots/05-detention-calculator.png) |
+| ![Containers](docs/screenshots/07-containers.png) | ![Voyages](docs/screenshots/08-voyages.png) |
+| ![Tariffs](docs/screenshots/09-tariffs.png) | ![Utilisation report](docs/screenshots/10-utilisation-report.png) |
+
+Taken from the running app with a few demo bookings and movements.
+
 ## Architecture
 
 ```mermaid
